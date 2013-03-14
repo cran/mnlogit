@@ -15,3 +15,6 @@ Changes since version 1.0.1
 
 	* Changed .C() with DUP=FALSE to .Call() to meet CRAN requirements.
 
+Changes since version 1.1.0
+
+	* Fixed a critical bug in calling compiled code with incorrect matrix args.

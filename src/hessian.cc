@@ -393,10 +393,15 @@ SEXP computeHessianDotCall(SEXP Np, SEXP Kp, SEXP pp, SEXP fp, SEXP dp,
     double *probMat = REAL(probM);
     double *baseProbVec = REAL(baseProbV);
     int ncores = INTEGER(nprocs)[0];
+       
+    //if (X) printMatrix("X matrix", X, N, p);
 
     double* H = REAL(hessM);
     computeHessian(&N, &K, &p, &f, &d, &hasWt, X, Y, Z, wt, probMat,
         baseProbVec, &ncores, H);
+
+    //printMatrix("Hessian matrix", H, np, np);
+
     return R_NilValue;
 }
 

@@ -1,8 +1,8 @@
-0495b537242bdd846f14f2d73288663a *ChangeLog
-86573c7438f6539bc150c477e20169ad *DESCRIPTION
+244bf067dc72543aeaaf1c96f08fc2df *ChangeLog
+c0d8d03e60372b648fad1e6278884e8d *DESCRIPTION
 5a1f277a9cd2f250f5afb75a0f8f6b98 *NAMESPACE
 d0801052ce8e459e39e79176fbeb49bc *R/formula.R
-21b2669424bb54a188e52175fa8df117 *R/likelihood.R
+bddf7d81c8384f8e01030d33f5520b88 *R/likelihood.R
 c3b7074125a107dc2335d426389c5ec7 *R/mnlogit.R
 fecb225dc82fa60561f836fa5ee85acd *R/mnlogit.methods.R
 0881015c20ca40826eead98cea0cd5c9 *R/newton.R
@@ -16,7 +16,7 @@ c59e72a40bd800b510646d696a74c08b *inst/doc/mnlogit.pdf
 36fd9f74fcdb1d536aa3c6231b552c02 *man/Fish.Rd
 c052c817dc6d5e8d3dc23c4c8550f47b *man/mnlogit.Rd
 73237c82818d44e4871663f6135a5bf6 *src/Makevars
-c9462d2901036cb96effaf083205bf66 *src/hessian.cc
+2e7c0fdc615c73d4f2086f949b3551b1 *src/hessian.cc
 9ae756c7cf128896703bcb716c90472f *src/hessian.h
 cfe66d7a0d2c4503a480f9d7fe416ece *vignettes/HessSpeedups.pdf
 a49b9e4a26e68864730216f43741eaa3 *vignettes/mnlogit.Rnw

@@ -133,8 +133,11 @@ likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE,
     ans <- if (hess) {
        hessMat <- rep(0, size$nparams * size$nparams)
        .Call("computeHessianDotCall" , as.integer(size$N), as.integer(size$K),
-            as.integer(size$p), as.integer(size$f), as.integer(size$d), X, Y,
-            Z, weights, probMat, baseProbVec, as.integer(ncores), hessMat)
+            as.integer(size$p), as.integer(size$f), as.integer(size$d), 
+            if (is.null(X)) NULL else as.double(t(X)), 
+            if (is.null(Y)) NULL else as.double(t(Y)), 
+            if (is.null(Z)) NULL else as.double(Z),
+            weights, probMat, baseProbVec, as.integer(ncores), hessMat)
        hessMat
     } else NULL
     #ans <- if (hess) { # Disallowed on CRAN with DUP=FALSE 

@@ -27,8 +27,8 @@ inline void rowSums(double* mat, int nrow, int ncol, double* ans, double* ones)
            ans, &unity);
 }
 
-void computeNonGenHess(const size& sz, double* X, double* Y, double* probMat,
-                       double* baseProb, int ncores, double* H)
+void computeNonGenHess(const size& sz, double* X, double* Y, double* wt,
+                       double* probMat, double* baseProb, int ncores, double* H)
 {
     int unity = 1;
     double d_one = 1.0, d_zero = 0.0;
@@ -102,7 +102,7 @@ void computeNonGenHess(const size& sz, double* X, double* Y, double* probMat,
                 p_im = (!useBP_m) ? probMat[m*sz.N + i] : baseProb[i];
                 p_in = (!useBP_n) ? probMat[n*sz.N + i] : baseProb[i];
                 w = (n == m) ? p_im*(1.0 - p_in) : -p_im * p_in;
-
+                if (wt) w *= wt[i];  // multiply fweights
                 for (int j=0; j < cols_matm; ++j) MtW[j + i*cols_matm] *= w;
             }
             // Now compute: hess = (mat_m^t * W_mn)*(mat_n^t)
@@ -148,7 +148,7 @@ void computeNonGenHess(const size& sz, double* X, double* Y, double* probMat,
     delete [] scratchHess;
 }
 
-void computeGenHessCorner(const size& sz, double* Z, double* probMat, 
+void computeGenHessCorner(const size& sz, double* Z, double* wt, double* probMat,
                           int ncores, double* H, double** scratchArrNK)
 {
     int unity = 1;
@@ -172,7 +172,7 @@ void computeGenHessCorner(const size& sz, double* Z, double* probMat,
     double* mat = new double[sz.N * sz.d];
     ncores = (sz.d >= ncores) ? ncores : sz.d; // limit num_threads to sz.d
     #ifdef SUPPORT_OPENMP
-    #pragma omp parallel for num_threads(ncores) schedule(dynamic)
+    #pragma omp parallel for num_threads(ncores) 
     #endif 
     for (int ii=0; ii < sz.d; ++ii) {
         int threadID = 0;
@@ -181,14 +181,36 @@ void computeGenHessCorner(const size& sz, double* Z, double* probMat,
         threadID = omp_get_thread_num();
         #endif
         double* PZ = scratchPZ[threadID];
+
         // Compute: PZ_i[j] = prob[j] * Z_col_i[j] 
+        // NOTE: dim(PZ) = N * K
         termwiseMult(probMat, Zc[ii], PZ, sz.N * K);
+
+        // Compute col ii of matrix: mat = rowSums(PZ), dim(mat) = N x sz.d
+        // NOTE: each col of 'mat' contains sum across choices
+        rowSums(PZ, sz.N, K, mat + ii*sz.N, ones_K);
+
+        if (wt) {
+            // Multiply fweights: to each col of PZ multiply corresponding wt 
+            for (int k=0; k < K; ++k)
+                termwiseMult(PZ + k * sz.N, wt, PZ + k * sz.N, sz.N);
+        }
+
         // Compute col ii of H: H[ , ii] = Z^T * PZ_ii 
         int nk = sz.N*K; 
         dgemv_(&Trans, &nk, &d, &d_one, Z, &nk, PZ, &unity, &d_zero,
                hess + ii*sz.d, &unity);
-        // Compute matrix: mat = rowSums(PS), dim(mat) = N x sz.d
-        rowSums(PZ, sz.N, K, mat + ii*sz.N, ones_K);
+    }
+    if (wt) {
+        // Perform mat = sqrt(W) * mat
+        // NOTE: sqrt is taken because we need: mat^T * W * mat
+        #ifdef SUPPORT_OPENMP
+        #pragma omp parallel for num_threads(ncores) 
+        #endif 
+        for (int j=0; j < sz.d; ++j) {
+            for (int i=0; i < sz.N; ++i) 
+                mat[i + j * sz.N] *= sqrt(wt[i]); 
+        }
     }
     // Hessian block: hess = hess - mat^T * mat
     dgemm_(&Trans, &NoTrans, &d, &d, &N, &d_minusOne, mat, &N, mat, &N, &d_one,
@@ -206,7 +228,7 @@ void computeGenHessCorner(const size& sz, double* Z, double* probMat,
   
 }
 
-void computeGenHess(const size& sz, double* X, double* Y, double* Z,
+void computeGenHess(const size& sz, double* X, double* Y, double* Z, double* wt,
                     double* probMat, double* baseProb, int ncores, double* H)
 {
     int unity = 1;
@@ -222,7 +244,7 @@ void computeGenHess(const size& sz, double* X, double* Y, double* Z,
         scratchArrNK[i] = new double[sz.N * K];
     
     // Compute the right-lower corner of Hessian (interaction among gen coeff)
-    computeGenHessCorner(sz, Z, probMat, ncores, H, scratchArrNK);
+    computeGenHessCorner(sz, Z, wt, probMat, ncores, H, scratchArrNK);
     
     if (sz.p == 0 && sz.f == 0) { //nothing more to be done
         for (int i=0; i < ncores; ++i) delete [] scratchArrNK[i];
@@ -290,6 +312,7 @@ void computeGenHess(const size& sz, double* X, double* Y, double* Z,
             double p_ik, p_in;
             for (int i=0; i < sz.N; ++i) {
                 p_ik = probMat[k*sz.N + i];
+                if (wt) p_ik *= wt[i];  // multiply fweights
                 p_in = (!useBP_n) ? probMat[n*sz.N + i] : baseProb[i];
                 W[i + k*sz.N] = (k == n) ? p_ik*(1.0 - p_in) : -p_ik * p_in;
             }
@@ -348,11 +371,42 @@ void computeGenHess(const size& sz, double* X, double* Y, double* Z,
     delete [] ones_K;
 }
 
-void computeHessian(int* Np, int* Kp, int* pp, int* fp, int* dp, double* X,
-                    double* Y, double* Z, double* probMat, double* baseProbVec,
-                    int* ncoresp, double* H)
+SEXP computeHessianDotCall(SEXP Np, SEXP Kp, SEXP pp, SEXP fp, SEXP dp,
+    SEXP Xm, SEXP Ym, SEXP Zm, SEXP Wv, SEXP probM, SEXP baseProbV,
+    SEXP nprocs, SEXP hessM)
+{
+    int N  = INTEGER(Np)[0];
+    int K  = INTEGER(Kp)[0];
+    int p  = INTEGER(pp)[0];
+    int f  = INTEGER(fp)[0];
+    int d  = INTEGER(dp)[0];
+    int np = p * (K - 1) + f * K + d; 
+
+    double *X = NULL, *Y = NULL, *Z = NULL, *wt = NULL;
+    if (!isNull(Xm)) X = REAL(Xm);
+    if (!isNull(Ym)) Y = REAL(Ym);
+    if (!isNull(Zm)) Z = REAL(Zm);
+    if (!isNull(Wv)) wt = REAL(Wv);
+    int hasWt = 0;
+    if (wt) hasWt = 1;
+
+    double *probMat = REAL(probM);
+    double *baseProbVec = REAL(baseProbV);
+    int ncores = INTEGER(nprocs)[0];
+
+    double* H = REAL(hessM);
+    computeHessian(&N, &K, &p, &f, &d, &hasWt, X, Y, Z, wt, probMat,
+        baseProbVec, &ncores, H);
+    return R_NilValue;
+}
+
+void computeHessian(int* Np, int* Kp, int* pp, int* fp, int* dp, int* hasWt, 
+            double* X, double* Y, double* Z, double* weight, double* probMat,
+            double* baseProbVec, int* ncoresp, double* H)
 {
     size sz(*Np, *Kp, *pp, *fp, *dp);
+    double* wt = NULL;
+    if (*hasWt) wt = weight;
     int ncores = *ncoresp;
     #ifndef SUPPORT_OPENMP
     if (ncores > 1) {
@@ -361,9 +415,24 @@ void computeHessian(int* Np, int* Kp, int* pp, int* fp, int* dp, double* X,
     }
     #endif    
     if (sz.p || sz.f)
-        computeNonGenHess(sz, X, Y, probMat, baseProbVec, ncores, H);
+        computeNonGenHess(sz, X, Y, wt, probMat, baseProbVec, ncores, H);
     if (sz.d)
-        computeGenHess(sz, X, Y, Z, probMat, baseProbVec, ncores, H);
+        computeGenHess(sz, X, Y, Z, wt, probMat, baseProbVec, ncores, H);
 }
+
+// Extracts from an R style list, the element corresponding to tag
+SEXP getListElement(SEXP list, const char *tag) {
+    if (!isNewList(list)) error("Arg list isn't a newList.");
+
+   SEXP elmnt = R_NilValue, names = getAttrib(list, R_NamesSymbol);
+   for (R_len_t i = 0; i < length(names); i++) {
+       if (strcmp(tag, CHAR(STRING_ELT(names, i)))==0) {
+           elmnt = VECTOR_ELT(list, i);
+           break;
+       }
+   }
+   return elmnt;
+}
+
 
 } // extern "C" 

@@ -1,0 +1,17 @@
+Changes since version 1.0.0
+	
+	* Inserted include guards for all openMP commands.
+
+
+Changes since version 1.0.1
+	
+	* Changed predict function using contributed code.
+
+	* Included weights option in mnlogit() call.
+
+	* Gradient norm for stopping now computed wrt inverse Hessian.
+
+	* Fixed a bug with the lowest allowed step size during line search.
+
+	* Changed .C() with DUP=FALSE to .Call() to meet CRAN requirements.
+

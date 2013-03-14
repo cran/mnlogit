@@ -23,7 +23,8 @@
 #     gtol    - gradient norm tolerance.
 #   ncores  - number of processors allowed to use
 #   print.level - increase from 0 to progressively print more running info
-#   coeff.names - names of coefficients, vector of length = nparams 
+#   coeff.names - names of coefficients, vector of length = nparams
+#   weights - vector specifying frequency weights 
 #   predict - if NOT NULL, then it must vecotr of coeff of length nparam
 #             and is used to compute predicted probability matrix
 #
@@ -35,7 +36,7 @@
 #   loglikelihood is also implemented.
 #############################################################################
 newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol, 
-                          ncores, print.level, coeff.names, predict = NULL)
+               ncores, print.level, coeff.names, weights=NULL, predict=NULL)
 {
     initTime <- proc.time()[3]
     # Determine problem parameters
@@ -56,34 +57,42 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
         if (length(predict) != size$nparams)
             stop("Arg predict of incorrect length or not a vector.")
         return(likelihood(response, X, Y, Z, size, predict, ncores,
-                          hess=FALSE, predict = TRUE))
+                          hess=FALSE, weights = weights, predict = TRUE))
     }
 
     # Initialize 'guess' for NR iteration
     coeffVec <- rep(0, size$nparams)
     funcTime <- gradTime <- hessTime <- lineSearch <- solveTime <- 0.0
     # Compute log-likelihood, gradient, Hessian at initial guess
-    fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores)
+    fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
+                 weights = weights)
     funcTime <- funcTime + attr(fEval, "funcTime")
     gradTime <- gradTime + attr(fEval, "gradTime")
     hessTime <- hessTime + attr(fEval, "hessTime")
     loglik <- fEval[[1]]
     gradient <- attr(fEval, "gradient")
     hessian <- attr(fEval, "hessian")
-    gradNorm <- as.numeric(sqrt(crossprod(gradient, gradient)))
     lineSearchIters <- 0
+    failed.linesearch <- FALSE
     stop.code <- "null"
-
+    
     # Newton-Raphson Iterations
     for (iternum in 1:maxiter) {
         oldLogLik <- loglik
         oldCoeffVec <- coeffVec
+    
+        # Find NR update vector by solving a linear system
+        t0 <- proc.time()[3] 
+        dir <- -1 * as.vector(solve(hessian, gradient, tol = 1e-24)) 
+        solveTime <- solveTime + proc.time()[3] - t0 
+        # Measure grad norm as: sqrt(grad^T * H^-1 * grad)
+        gradNorm <- as.numeric(sqrt(abs(crossprod(dir, gradient))))
 
         if (print.level) {
           cat("====================================================")
           cat(paste0("\nNewton Raphson iteration # ", iternum))
-          cat(paste0("\n  loglikelihood = ", loglik))
-          cat(paste0("\n  gradient 2-norm = ", gradNorm))
+          cat(paste0("\n  loglikelihood = ", round(loglik, 8)))
+          cat(paste0("\n  gradient norm = ", round(gradNorm, 8)))
           cat("\n  Approx Hessian condition number = ")
           cat(paste0(round(1.0/rcond(hessian), 2), "\n"))
         }        
@@ -99,51 +108,59 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
             }
         } 
         
-        # Find NR update vector by solving a linear system
-        t0 <- proc.time()[3] 
-        dir <- -1*as.vector(solve(hessian, gradient, tol = 1e-24)) 
-        solveTime <- solveTime + proc.time()[3] - t0 
-    
         # Do the linesearch trying first to take the full Newton step
         t1 <- proc.time()[3] 
         alpha <- 1.0
         niter <- 0
         newloglik <- NULL
-        while(alpha >= 1e-4) {
+        while(1) {
             niter <- niter + 1
-            coeffVec <- oldCoeffVec + alpha*dir
+            coeffVec <- oldCoeffVec + alpha * dir
             newloglik <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
-                                    hess = FALSE)
+                                    hess = FALSE, weights = weights)
             funcTime <- funcTime + attr(newloglik, "funcTime")
             gradTime <- gradTime + attr(newloglik, "gradTime")
             hessTime <- hessTime + attr(newloglik, "hessTime")
             if (newloglik[[1]] < oldLogLik) break
             else alpha <- alpha/2.0
+            if (max(abs(alpha * dir)) < 1e-15)  { 
+              failed.linesearch <- TRUE
+              print(paste("alpha, max(alpha * dir) = ", alpha, max(abs(alpha*dir))))
+              break
+            }
         } 
         t2 <- proc.time()[3]
         lineSearchIters <- lineSearchIters + niter
         lineSearch <- lineSearch + t2 - t1
 
-        # Compute log-likelihood, gradient, Hessian
-        fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
-                            loglikObj = newloglik)
-        funcTime <- funcTime + attr(fEval, "funcTime")
-        gradTime <- gradTime + attr(fEval, "gradTime")
-        hessTime <- hessTime + attr(fEval, "hessTime")
-        loglik <- fEval[[1]]
-        gradient <- attr(fEval, "gradient")
-        hessian <- attr(fEval, "hessian")
-        gradNorm <- as.numeric(sqrt(crossprod(gradient, gradient)))
-         
-        # First Success Criteria: function values converge
+        # if linesearch succeeds we moved along Newton direction
+        # Compute new log-likelihood, gradient, Hessian
+        if (!failed.linesearch) {   
+            fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
+                            weights = weights, loglikObj = newloglik)
+            funcTime <- funcTime + attr(fEval, "funcTime")
+            gradTime <- gradTime + attr(fEval, "gradTime")
+            hessTime <- hessTime + attr(fEval, "hessTime")
+            loglik <- fEval[[1]]
+            gradient <- attr(fEval, "gradient")
+            hessian <- attr(fEval, "hessian")
+        } 
+
+        # Success Criteria: function values converge
         loglikDiff <- abs(loglik - oldLogLik)    
         if (loglikDiff < ftol) {
           stop.code <- paste0("Succesive loglik difference < ftol (", ftol, ").")
           break
         }
-        # Second Success Criteria: gradient reduces below gtol 
+        # Success Criteria: gradient reduces below gtol 
+        gradNorm <- as.numeric(sqrt(abs(crossprod(dir, gradient))))
         if (gradNorm < gtol) {
-          stop.code <- paste0("Gradient 2-norm < gtol (", gtol, ").")
+          stop.code <- paste0("Gradient norm < gtol (", gtol, ").")
+          break
+        }
+        # Success criterion not met, yet linesearch failed 
+        if (failed.linesearch) {
+          stop.code <- paste0("Newton-Raphson Linesearch failed, can't do better")
           break
         }
     }  # end Newton-Raphson loop

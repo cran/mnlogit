@@ -12,6 +12,7 @@
 #       See docs of newton.R
 #   ncores  - number of processors allowed to use
 #   hess - Evaluate Hessian & gradient only if TRUE
+#   weights - a vector of frequency weights
 #   predict - Only compute & return probability matrix if TRUE
 #   loglikObj - If not NULL, gradient & the probability matrix are grabbed
 #               from this, else they are computed
@@ -29,7 +30,7 @@
 #   Calls a C++ function to evaluate the Hessian.
 #############################################################################
 likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE, 
-                       predict = FALSE, loglikObj = NULL)
+                       weights = NULL, predict = FALSE, loglikObj = NULL)
 {
     t0 <- t1 <- t2 <- proc.time()[3]
     
@@ -65,13 +66,20 @@ likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE,
         }
 
         # Compute partial log-likelihood
-        loglik <- drop(as.vector(probMat) %*% response)   # partial loglik
+        loglik <- if (is.null(weights))
+                     drop(as.vector(probMat) %*% response)
+                  else 
+                     drop(as.vector(probMat) %*% (weights * response))
         # Convert utility to probabilities - use logit formula
         probMat <- exp(probMat)                           # exp(utility)
         baseProbVec <- 1/(1 + rowSums(probMat))           # P_i0
-        loglik <- -1*(loglik + sum(log(baseProbVec)))     # log-likelihood
         probMat <- probMat * matrix(rep(baseProbVec, size$K-1),
                           nrow = size$N, ncol = size$K-1) # P_ik
+        # Negative log-likelihood
+        loglik <- if (is.null(weights))
+                      -1*(loglik + sum(log(baseProbVec)))
+                  else
+                      -1*(loglik + weights %*% baseProbVec)  
 
         if (predict)
             return(cbind(baseProbVec, probMat))
@@ -90,21 +98,30 @@ likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE,
         baseResp <- rep(1, size$N) - rowSums(responseMat)
    
         xgrad <- if (!is.null(X)) {
-            as.vector(crossprod(X, responseMat - probMat))
+            if (is.null(weights))
+                as.vector(crossprod(X, responseMat - probMat))
+            else
+                as.vector(crossprod(X, weights * (responseMat - probMat)))
         } else NULL
         ygrad <- if (!is.null(Y)) {
             yresp <- c((baseResp - baseProbVec), (response-as.vector(probMat)))
             findYgrad <- function(ch_k)
             {
-                init <- (ch_k - 1)*size$N + 1
-                fin <- ch_k * size$N
+              init <- (ch_k - 1)*size$N + 1
+              fin <- ch_k * size$N
+              if (is.null(weights))
                 crossprod(Y[init:fin, , drop=FALSE], yresp[init:fin])
+              else
+                crossprod(Y[init:fin, , drop=FALSE], weights * yresp[init:fin])
             }
             as.vector(sapply(c(1:size$K), findYgrad))
         } else NULL
        
         if (!is.null(Z)) {
-            zgrad <- as.vector(Z) * as.vector(responseMat - probMat)
+            zgrad <- if (is.null(weights))
+                       as.vector(Z) * as.vector(responseMat - probMat)
+                     else
+                       as.vector(Z) * weights * as.vector(responseMat - probMat)
             zgrad <- colSums(matrix(zgrad, nrow=nrow(Z), ncol=size$d))
         } else zgrad <- NULL
         -1 * c(xgrad, ygrad, zgrad)
@@ -114,21 +131,31 @@ likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE,
 
     # Hessian calculation
     ans <- if (hess) {
-      .C("computeHessian" , as.integer(size$N), as.integer(size$K),
-        as.integer(size$p), as.integer(size$f), as.integer(size$d), 
-        if (is.null(X)) matrix(1) else as.double(t(X)), 
-        if (is.null(Y)) matrix(1) else as.double(t(Y)), 
-        if (is.null(Z)) matrix(1) else as.double(Z),
-        as.double(probMat), as.double(baseProbVec), as.integer(ncores),
-        hessMat = as.double(rep(0, size$nparams*size$nparams)), DUP=FALSE)
+       hessMat <- rep(0, size$nparams * size$nparams)
+       .Call("computeHessianDotCall" , as.integer(size$N), as.integer(size$K),
+            as.integer(size$p), as.integer(size$f), as.integer(size$d), X, Y,
+            Z, weights, probMat, baseProbVec, as.integer(ncores), hessMat)
+       hessMat
     } else NULL
+    #ans <- if (hess) { # Disallowed on CRAN with DUP=FALSE 
+    #  .C("computeHessian" , as.integer(size$N), as.integer(size$K),
+    #    as.integer(size$p), as.integer(size$f), as.integer(size$d), 
+    #    if (is.null(weights)) as.integer(0) else as.integer(1),
+    #    if (is.null(X)) matrix(1) else as.double(t(X)), 
+    #    if (is.null(Y)) matrix(1) else as.double(t(Y)), 
+    #    if (is.null(Z)) matrix(1) else as.double(Z),
+    #    if (is.null(weights)) matrix(1) else as.double(weights),
+    #    as.double(probMat), as.double(baseProbVec), as.integer(ncores),
+    #    hessMat = as.double(rep(0, size$nparams*size$nparams)), DUP=FALSE)
+    #} else NULL
     t3 <- proc.time()[3]  # Time after Hessian evaluation
     
     # Prepare to return
     attr(loglik, "probMat")  <- probMat
     attr(loglik, "gradient") <- gradient
     attr(loglik, "hessian")  <- if (!hess) attr(loglikObj, "hessian") 
-        else matrix(ans$hessMat, nrow = size$nparams, ncol = size$nparams)
+        else matrix(ans, nrow = size$nparams, ncol = size$nparams)
+        #else matrix(ans$hessMat, nrow = size$nparams, ncol = size$nparams)
     attr(loglik, "funcTime") <- t1 - t0 
     attr(loglik, "gradTime") <- t2 - t1 
     attr(loglik, "hessTime") <- t3 - t2

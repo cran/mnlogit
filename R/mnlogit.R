@@ -1,8 +1,7 @@
 ###############################################################################
 #                        Package: mnlogit                                     #
-# Multinomial logit, maximum likelihood estimation by Newton-Raphson method   #
 #                                                                             #
-# Version: 1.0                                                                #
+# Multinomial logit, maximum likelihood estimation by Newton-Raphson method   #
 #                                                                             #
 # Implementors: Wang Zhiyu, Asad Hasan                                        # 
 #               Scientific Computing Group, Sentrana Inc.                     #
@@ -19,12 +18,12 @@
 #                 Difference of two consecutive function evaluation
 #                 Criteria of terminating Newton's Iterative process
 #   gtol        - gradient norm tolerance.
+#   weights     - an optional vector of positive frequency weights.
 #   ncores      - number of processors allowed to use
 #   na.rm       - if FALSE then stop(), else remove rows of data with NA
 #   print.level - increase from 0 to progressively print more runing info
 #   linDepTol   - tolerance with which linear dep among cols is detected
-#   ...         - grab 'predict', if present it must be a vector of coeff for
-#                 prediction with fitted models (see docs to newton.R)
+#   ...         - currently unused 
 #        
 # Output: 
 #   mnlogit object
@@ -32,13 +31,13 @@
 # Note:    
 #   'ftol', 'gtol' & 'maxiter' specify Newton-Raphson termination criteria 
 ###############################################################################
-mnlogit <- function(formula, data, choiceVar, maxiter = 25, ftol = 1e-6,
-                    gtol = 1e-6, ncores = 1, na.rm = TRUE, print.level = 0,
-                    linDepTol = 1e-6, ...)
+mnlogit <- function(formula, data, choiceVar, maxiter = 50, ftol = 1e-6,
+                    gtol = 1e-6, weights = NULL, ncores = 1, na.rm = TRUE,
+                    print.level = 0, linDepTol = 1e-6, ...)
 {
     startTime <- proc.time()[3]
     initcall <- match.call()    # Store original function call
-    predict <- initcall$predict # Grab predict arg, NULL if absent
+    predict <- NULL             # Disused 
 
     # Basic parameter checking
     if (!is.data.frame(data))
@@ -69,9 +68,16 @@ mnlogit <- function(formula, data, choiceVar, maxiter = 25, ftol = 1e-6,
     if (nrow(data) %% K)
         stop("Mismatch between number of rows in data and number of choices.")
     N <- nrow(data)/K       # number of individuals
-    
+
+    # Check if weights is OK 
+    if (!is.null(weights) && length(weights) != N)
+      stop("Length of 'weights' arg must match number of observations in data.")
+    if (!is.null(weights) && !all(weights > 0))
+      stop("All entries in 'weights' must be strictly positive.")      
+
     # Work with only the columns appearing in formula
     data <- data[c(varNames, choiceVar)]
+
     # Handle NA; Find out row numbers with atleast one NA
     na.rows <- c()
     for (col in 1:ncol(data))
@@ -89,6 +95,10 @@ mnlogit <- function(formula, data, choiceVar, maxiter = 25, ftol = 1e-6,
                 keepRows[((i-1)*K + 1):(i*K)] <- FALSE
         }
         data <- data[keepRows, , drop=FALSE]
+        # Drop weights corresponding to dropped rows 
+        if (!is.null(weights)) {
+            weights <- weights[keepRows[seq(1, N * K, K)]]
+        }
         N <- nrow(data)/K
         Ndropped <- (length(keepRows) - sum(keepRows))/K
     }
@@ -216,7 +226,7 @@ mnlogit <- function(formula, data, choiceVar, maxiter = 25, ftol = 1e-6,
 
     # Solve MLE using Newton-Raphson
     result <- newtonRaphson(respVec, X, Y, Z, K, maxiter, gtol, ftol, ncores,
-                            print.level, coeffNames)    
+                            print.level, coeffNames, weights)    
     # Post-processing
     colnames(result$hessMat) <- coeffNames 
     rownames(result$hessMat) <- coeffNames

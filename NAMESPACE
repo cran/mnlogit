@@ -1,5 +1,5 @@
 useDynLib(mnlogit)
-useDynLib(mnlogit, "computeHessian")
+useDynLib(mnlogit, "computeHessianDotCall")
 export("mnlogit")
 
 # mnlogit methods

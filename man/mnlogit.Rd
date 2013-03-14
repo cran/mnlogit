@@ -8,18 +8,18 @@
 \alias{print.model.size}
 \alias{print.summary.mnlogit}
 
-\title{Efficient estimation of multinomial logit model}
+\title{Fast estimation of multinomial logit models}
 
 \description{
-Time and memory efficient estimation of multinomial logit models using maximum likelihood method and targeted towards large scale multiclass classification problems in econometrics and machine learning. 
-Numerical optimization performed by Newton-Raphson method using an optimized, parallel C++ library to achieve fast computation of Hessian matrices.
+Time and memory efficient estimation of multinomial logit models using maximum likelihood method and targeted at large scale multiclass classification problems in econometrics and machine learning. 
+Numerical optimization is performed by the Newton-Raphson method using an optimized, parallel C++ library to achieve fast computation of Hessian matrices.
 The user interface closely related to the CRAN package \pkg{mlogit}.
 }
 
 \usage{
-mnlogit(formula, data, choiceVar, maxiter = 25, ftol = 1e-6,
-        gtol = 1e-6, ncores = 1, na.rm = TRUE, print.level = 0, 
-         linDepTol = 1e-6, ...)
+mnlogit(formula, data, choiceVar, maxiter = 50, ftol = 1e-6,
+        gtol = 1e-6, weights = NULL, ncores = 1, na.rm = TRUE, 
+        print.level = 0, linDepTol = 1e-6, ...)
 \method{predict}{mnlogit}(object, newdata = NULL, probability = FALSE, ...)
 \method{coef}{mnlogit}(object, as.list = FALSE, ...)
 }
@@ -28,13 +28,14 @@ mnlogit(formula, data, choiceVar, maxiter = 25, ftol = 1e-6,
     \item{data}{A data.frame object with data organized in the 'long' format (see Note).}
     \item{choiceVar}{A string naming the column in 'data' which has the list of choices.}
     \item{maxiter}{An integer indicating maximum number of Newton's iterations,}
-    \item{gtol}{A real number indicating tolerance on 2-norm of the gradient.}
     \item{ftol}{A real number indicating tolerance on the difference of two subsequent loglikelihood values.}
+    \item{gtol}{A real number indicating tolerance on norm of the gradient.}
+    \item{weights}{Optional vector of (positive) frequency weights, one for each observation.}
     \item{ncores}{An integer indicating number of processors allowed for Hessian calculations.}
     \item{na.rm}{a logical variable which indicates whether rows of the data frame containing NAs will be removed.}
     \item{print.level}{An integer which controls the amount of information to be printed during execution.}
     \item{linDepTol}{Tolerance for detecting linear dependence between columns in input data. Dependent columns are removed from the estimation.}
-    \item{...}{Used in mnlogit for prediction - not meant for external usage.}
+    \item{...}{Currently unused.}
     \item{object}{A fitted mnlogit object.}
     \item{newdata}{A data.frame object to used for prediction.}
     \item{probability}{If TRUE predict output the probability matrix, otherwise the chocice with the highest probability for each observation is returned.}

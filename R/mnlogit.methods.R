@@ -1,8 +1,8 @@
-######################################
-#                                    #
-#  Methods for mnlogit objects       # 
-#                                    #
-######################################
+###############################################
+#                                             #
+#	Methods for mnlogit objects           # 
+#                                             #
+###############################################
 
 # Extract the coefficients of the mnlogit object
 coef.mnlogit <- function(object, as.list = FALSE, ...)
@@ -40,20 +40,6 @@ logLik.mnlogit <- function(object, ...){
     object$logLik
 }
 
-# Predict function
-predict.mnlogit <- function(object, newdata = NULL, probability = FALSE, ...)
-{
-    if (is.null(newdata)) newdata <- object$data
-    choiceVar <- object$call$choiceVar
-    probMat <- mnlogit(object$formula, newdata, choiceVar,
-                       predict = object$coeff)
-    colnames(probMat) <- object$choices
-    if (probability) return(probMat)
-    choice <- apply(probMat, 1, function(x)
-                    object$choices[which(x == max(x, na.rm = TRUE))])
-    return(choice)
-}
-
 # Print estimation statistics 
 print.est.stats <- function(x, ...)
 {
@@ -61,8 +47,8 @@ print.est.stats <- function(x, ...)
     cat(paste0("\n  Number of iterations: ", x$niters))
     cat(paste0("\n  Number of linesearch iterations: ", x$LSniters))
     cat(paste0("\nAt termination: "))
-    cat(paste0("\n  Gradient 2-norm = ", x$gradNorm))
-    cat(paste0("\n  Diff between last 2 loglik values = ", x$funcDiff))
+    cat(paste0("\n  Gradient norm = ", round(x$gradNorm, 8)))
+    cat(paste0("\n  Diff between last 2 loglik values = ", round(x$funcDiff, 8)))
     cat(paste0("\n  Stopping reason: ", x$stopCond))
     cat(paste0("\nTotal estimation time (sec): ", round(x$totalMins*60, 3)))
     cat(paste0("\nTime for Hessian calculations (sec): ",

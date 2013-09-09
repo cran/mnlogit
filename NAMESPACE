@@ -1,16 +1,44 @@
-useDynLib(mnlogit)
+######################################################################
+## Imports
+######################################################################
+import("Formula")
+importFrom("mlogit", "mlogit.data")
+importFrom("mlogit", "index")
+importFrom("lmtest", "lrtest")
+importFrom("lmtest", "lrtest.default")
+importFrom("lmtest", "waldtest")
+importFrom("lmtest", "waldtest.default")
+
+######################################################################
+## Exports
+######################################################################
 useDynLib(mnlogit, "computeHessianDotCall")
-export("mnlogit")
+export("mnlogit", "lrtest", "waldtest", "scoretest", "hmftest")
 
-# mnlogit methods
-S3method("print", "mnlogit")
-S3method("predict", "mnlogit")
-S3method("summary", "mnlogit")
-
-S3method("coef", "mnlogit")
+######################################################################
+## mnlogit methods
+######################################################################
+S3method("fitted", "mnlogit")
 S3method("residuals", "mnlogit")
+S3method("df.residual", "mnlogit")
+S3method("terms", "mnlogit")
+S3method("update", "mnlogit")
+S3method("print", "mnlogit")
 S3method("vcov", "mnlogit")
 S3method("logLik", "mnlogit")
+S3method("summary", "mnlogit")
+S3method("print", "summary.mnlogit")
+S3method("index", "mnlogit")
+S3method("predict", "mnlogit")
+S3method("coef", "mnlogit")
+S3method("lrtest", "mnlogit")
+S3method("waldtest", "mnlogit")
+S3method("scoretest", "mnlogit")
+S3method("hmftest", "mnlogit")
+
+######################################################################
+## Other methods
+######################################################################
 S3method("print", "est.stats")
 S3method("print", "model.size")
-S3method("print", "summary.mnlogit")
+S3method("hmftest", "formula")

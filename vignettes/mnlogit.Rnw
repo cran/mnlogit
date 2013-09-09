@@ -7,35 +7,26 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage{color}
-\usepackage[toc]{appendix}
+%\usepackage[toc]{appendix}
 
 %\VignetteIndexEntry{Fast Estimation of Multinomial Logit Models: R package mnlogit}
 %\VignetteDepends{mlogit, nnet}
 %\VignetteKeyword{multinomial logit, classification, parallel, choice model, large scale, parallel, econometrics}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% \usepackage{undertilde}
+%% Definitions 
 % Vectors, Tensors
-\def\vect#1{{\vec{#1}}}    % Fancy vector
-\def\tensor#1{{\mathbf{#1}}}    % 2nd rank tensor
-\def\mat#1{{\mathbf{#1}}}		% matrix
-
-\def\dotP#1#2{\vect{#1}\cdot\vect{#2}}		% Dot product
-
+\def\vect#1{{\vec{#1}}}                               % Fancy vector
+\def\tensor#1{{\mathbf{#1}}}                          % 2nd rank tensor
+\def\mat#1{{\mathbf{#1}}}	                      % matrix
+\def\dotP#1#2{\vect{#1}\cdot\vect{#2}}		      % Dot product
 % Derivatives
 \def\deriv#1#2{\frac{d{}#1}{d{}#2}}                   % derivtive
 \def\partderiv#1#2{\frac{\partial{}#1}{\partial{}#2}} % partial derivtive
-
 % Math functions
 \def\log#1{\text{log}\left(#1\right)}
-
 % Statistics
-\def\expect#1{E\left(#1\right)}	            % expectation
-\def\mean#1{\left<{}#1\right>}	            % mean
-\def\var#1{\sigma^2{\left(#1\right)}}		% variance
-\def\stddev#1{\sigma_{#1}}					% standard deviation
-\def\cov#1#2{\sigma^2\left(#1, #2\right)}	% covariance
-\def\prob#1{P\left(#1\right)}				% probability
+\def\prob#1{\Prob\left(#1\right)}		      % probability
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% declarations for jss.cls %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,11 +45,11 @@
 \Shorttitle{Fast Estimation of Multinomial Logit Models: \proglang{R} package \pkg{mnlogit}} %% a short title (if necessary)
 
 %% an abstract and keywords
-\Abstract{
+\Abstract{ 
  We present \proglang{R} package \pkg{mnlogit} for training multinomial logistic regression models, particularly those involving a large number of classes and features.
  Compared to existing software, \pkg{mnlogit} offers speedups of 10x-50x for modestly sized problems and more than 100x for larger problems.
-Running in parallel mode on a multicore machine gives an additional 2x-4x speedup on up to 8 processor cores.  
-\pkg{mnlogit} achieves its computational efficiency by drastically speeding up compution of the log-likelihood function's Hessian matrix through exploiting structure in matrices that arise in intermediate calculations.
+Running in parallel mode on a multicore machine gives upto 4x additional speedup on 8 processor cores.  
+\pkg{mnlogit} achieves its computational efficiency by drastically speeding up computation of the log-likelihood function's Hessian matrix through exploiting structure in matrices that arise in intermediate calculations.
 }
 \Keywords{logistic regression, multinomial logit, discrete choice, large scale, parallel, econometrics}
 \Plainkeywords{logistic regression, multinomial logit, discrete choice, large scale, parallel, econometrics} %% without formatting
@@ -119,66 +110,63 @@ options(prompt = "R> ", continue = "+  ", width = 70, useFancyQuotes = FALSE)
 
 \section{Introduction}
 \label{section: introduction}
-
-Multinomial logit regression models, the multiclass extension of binary logistic regression, have long been used in econometrics in the context of modeling discrete choice (\citet{MCFAD:74}, ~\citet{BHAT:95},~\cite{TRAIN:03}) and in machine learning as a linear classification technique~\citep{HastieTibBook} for tasks such as text classification~\citep{Nigam1999}.
+Multinomial logit regression models, the multiclass extension of binary logistic regression, have long been used in econometrics in the context of modeling discrete choice \citep{MCFAD:74, BHAT:95, TRAIN:03} and in machine learning as a linear classification technique~\citep{HastieTibBook} for tasks such as text classification~\citep{Nigam1999}.
 Training these models presents the computational challenge of having to compute a large number of coefficients which increases linearly with the number of classes and the number of features.
 Despite the potential for multinomial logit models to become computationally expensive to estimate, they have an intrinsic structure which can be exploited to dramatically speedup estimation. 
-Our objective in this paper is twofold: first we describe how to exploit this structure to optimize computational efficiency, and second, to present an implementation of our ideas in our \proglang{R}~\citep{Rlang} package~\pkg{mnlogit} which is available from CRAN (Comprehensive \proglang{R} Archive Network) at: \url{http://cran.r-project.org/web/packages/mnlogit/index.html}.
+Our objective in this paper is twofold: first we describe how to exploit this structure to optimize computational efficiency, and second, to present an implementation of our ideas in our \proglang{R}~\citep{Rlang} package~\pkg{mnlogit} which is available from CRAN at: \url{http://cran.r-project.org/web/packages/mnlogit/index.html}.
 
 An older method of dealing with the computational issues involved in estimating large scale multinomial logistic regressions has been to approximate it as a series of binary logistic regressions~\citep{BeggGray1984}. 
 In fact the \proglang{R} package \pkg{mlogitBMA}~\citep{mlogitBMA} implements this idea as the first step in applying Bayesian model averaging to multinomial logit data.
-Large scale logistic regressions can, in turn, be tackled by a number of advanced optimization algorithms (\citet{KomarekMoore},~\citep{LinLogistic2009}).
+Large scale logistic regressions can, in turn, be tackled by a number of advanced optimization algorithms \citep{KomarekMoore, LinLogistic2009}.
 A number of recent \proglang{R} packages have focussed on slightly different aspects of estimating regularized multinomial logistic regressions. 
 For example: package \pkg{glmnet}~\citep{glmnet} is optimized for obtaining the entire $L1$-regularized paths and uses the coordinate descent algorithm with `warm starts', package \pkg{maxent}~\citep{JurkaMaxent} is intended for large text classification problems which typically have very sparse data and the package \pkg{pmlr}~\citep{pmlr} which penalizes the likelihood function with the Jeffreys prior to reduce first order bias and works well for small to medium sized datasets.
 There are also \proglang{R} packages which estimate plain (unregularized) multinomial regression models. 
 Some examples are: the \pkg{VGAM} package~\citep{VGAM}, the \code{multinom} function in package \pkg{nnet}~\citep{nnet} and package the \pkg{mlogit}~\citep{mlogit}.
 
 Of all the \proglang{R} packages previously described, \pkg{mlogit} is the most versatile in the sense that it handles many data types and extensions of multinomial logit models (such as nested logit, heteroskedastic logit, etc.). 
-Especially in econometric applications, which are motivated by the utility maximization principle (\citep{MCFAD:73},~\citep{MCFAD:74}), one encounters data which depends upon \emph{both} the observation instance and the choice class.
+These are especially important in econometric applications, which are motivated by the utility maximization principle \citep{MCFAD:74}, where one encounters data which depends upon \emph{both} the observation instance and the choice class.
 Our package \pkg{mnlogit} provides the ability of handling these general data types while adding the advantage of very quick computations.
-Indeed this work is motivated by our own practical experience of the impossibility of being able to train large scale multinomial logit models using existing software.
+This work is motivated by our own practical experience of the impossibility of being able to train large scale multinomial logit models using existing software.
 
 In \pkg{mnlogit} we perform maximumum likelihood estimation (MLE) using the Newton-Raphson (NR) method.
-We make the NR method quite efficient in \pkg{mnlogit} by exploiting structure and sparsity in intermediate data matrices to achieve very fast computations of the Hessian of the log-likelihood function.   
-This overcomes the NR method's well known weakness of incurring very high per-iteration cost, compared to algorithms from the quasi-Newton family~(\cite{Nocedal1992},~\cite{Nocedal1990}).
-Indeed classical NR (and IRLS) estimations of multinomial logit models have been slow for this very reason. 
+We speed up the NR method by exploiting structure and sparsity in intermediate data matrices to achieve very fast computations of the Hessian of the log-likelihood function.   
+This overcomes the NR method's well known weakness of incurring very high per-iteration cost, compared to algorithms from the quasi-Newton family \citep{Nocedal1992, Nocedal1990}.
+Indeed classical NR estimations of multinomial logit models (usually of the Iteratively Reweighted Least Square family) have been slow for this very reason. 
 On a single processor our methods have allowed us to achieve speedups of 10x-50x compared to \pkg{mlogit} on modest-sized problems while performing~\emph{identical} computations. 
 In parallel mode\footnote{Requires \pkg{mnlogit} to be compiled with OpenMP support (usually present by default with most \proglang{R} installations, except on Mac OS X).}, \pkg{mnlogit} affords the user an additional speedup of 2x-4x while using up to 8 processor cores.
 
 We provide a simple formula-based interface for specifiying a varied menu of models to \pkg{mnlogit}.  
 Section~\ref{section: data format and model specification} illustrates aspects of the formula interface, the expected data format  and the precise interpretations of variables in \pkg{mnlogit}.
 To make the fullest use of \pkg{mnlogit} we suggest that the user understand the simple \proglang{R} example worked out over the course of this section.  
-Section~\ref{section: algorithms and optimization} and appendix~\ref{appendix: log-likelihood differentiation } contain the details of our estimation procedure, emphasizing the ideas that underlie the computational efficiency we achieve in \pkg{mnlogit}.
-In section~\ref{section: benchmarking performance} we present the results of our numerical experiments in benchmarking and comparing \pkg{mnlogit}'s performance, while appendix~\ref{appendix: timing tests} has a synopsis of our timing methods. 
-Finally section~\ref{section: discussion} concludes with a short discussion and a promising idea for future work.
-
+Section~\ref{section: algorithms and optimization} and Appendix~\ref{appendix: log-likelihood differentiation } contain the details of our estimation procedure, emphasizing the ideas that underlie the computational efficiency we achieve in \pkg{mnlogit}.
+In Section~\ref{section: benchmarking performance} we present the results of our numerical experiments in benchmarking and comparing \pkg{mnlogit}'s performance with other packages while Appendix~\ref{appendix: timing tests} has a synopsis of our timing methods. 
+Finally Section~\ref{section: discussion} concludes with a short discussion and a promising idea for future work.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{On using mnlogit}
+\section[On using mnlogit]{On using \pkg{mnlogit}}
 \label{section: data format and model specification}
 
 The data for multinomial logit models may vary with both the choice makers (`individuals') and the choices themselves.
 Besides, the modeler may prefer model coefficients that may (or may not) depend on choices.  
 In \pkg{mnlogit} we try to keep the user interface as minimal as possible without sacrificing flexibility.
+We follow the interface of the \code{mlogit} function in package \pkg{mlogit}. 
 This section describes the \pkg{mnlogit} user interface, emphasizing data preparation requirements and model specification via an enhanced formula interface.
+To start, we load the package \pkg{mnlogit} in an \proglang{R} session:
+<<>>=
+library("mnlogit")
+@
 
 \subsection{Data preparation}
 \label{subsection: data preparation}
 
-In \pkg{mnlogit} we follow the interface (with significant simplifications) of the package \pkg{mlogit}. 
-To start, we load the package \pkg{mnlogit} in an \proglang{R} session:
+\pkg{mnlogit} accepts data in the `long' format which requires that if there are $K$ choices, then there be $K$ rows of data for \emph{each} individual (see also Section 1.1 of the \pkg{mlogit} vignette).
+Here is a snapshot from data in the `long' format on choice of recreational fishing mode made by 1182 individuals:
 <<>>=
-library(mnlogit)
-@
-\pkg{mnlogit} accepts data in the `long' format (see also vignette of \pkg{mlogit}).
-The `long' format requires that if there are $K$ choices, then there be $K$ rows of data for \emph{each} individual.
-Here is a snapshot from data on choice of recreational fishing mode made by 1182 individuals:
-<<>>=
-data(Fish, package = 'mnlogit')
+data("Fish", package = 'mnlogit')
 head(Fish, 8)
 @
-In the `Fish' data, there are 4 choices ("beach", "boat", "charter", "pier") available to each individual: labeled by the `chid' (chooser ID).
+In the `Fish' data, there are 4 choices (`beach', `boat', `charter', `pier') available to each individual: labeled by the `chid' (chooser ID).
 The `price' and `catch' column show, respectively, the cost of a fishing mode and (in unspecified units) the expected amount of fish caught.
 An important point here is that this data varies \emph{both} with individuals and the fishing mode.
 The `income' column reflects the income level of an individual and does not vary between choices.
@@ -186,8 +174,11 @@ Notice that the snapshot shows this data for two individuals.
 
 The actual choice made by an individual, the `response' variable, is shown in the column `mode'.
 \pkg{mnlogit} requires that the data contain a column with exactly two categories whose levels can be coerced to integers by \code{as.numeric()}.
-The greater of these integers is automatically taken to mean TRUE.
-The only other column strictly mandated by \pkg{mnlogit} is one listing the names of choices (like the `alt' in Fish data).
+The greater of these integers is automatically taken to mean \code{TRUE}.
+
+The only other column strictly mandated by \pkg{mnlogit} is one listing the names of choices (like column `alt' in Fish data).
+However if the data frame is an \code{mlogit.data} class object, then this column maybe \emph{omitted}.
+In such cases \pkg{mnlogit} can query the \code{index} attribute of an \code{mlogit.data} object to figure out the information contained in the `alt' column.  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Model parametrization}
@@ -198,7 +189,7 @@ The central idea in these discrete models lies in the `utility maximization prin
 Discrete choice models presume that the utility is completely deterministic for the individual, however modelers can only model a part of the utility (the `observed' part).
 Stochasticity entirely arises from the \emph{unobserved} part of the utility. 
 Different assumptions about the probability distribution of the unobserved utility give rise to various choice models like multinomial logit, nested logit, multinomial probit, GEV (Generalized Extreme Value), mixed logit etc.
-Multinomial logit models, in particular, assume that unobserved utility is i.i.d. and follows a Gumbel distribution.\footnote{See the book~\citet{TRAIN:03}, particularly chapters 3 and 5, for a full discussion.}
+Multinomial logit models, in particular, assume that unobserved utility is i.i.d. and follows a Gumbel distribution.\footnote{See the book~\citet{TRAIN:03}, particularly Chapters 3 and 5, for a full discussion.}
 %%%%%%%%%%%%%%%%%
 
 We consider that the \emph{observed} part of the utility for the $i^{th}$ individual choosing the $k^{th}$ alternative is given by: 
@@ -210,10 +201,10 @@ Here Latin letters ($X$, $Y$, $Z$) stand for data while Greek letters ($\xi$, $\
 The parameter $\xi_{k}$ is called the \emph{intercept}.
 For many practical applications data in multinomial logit models can be naturally grouped into two types:
 \begin{itemize}
-\item {\bf Individual specific variables $\vec{X}_{i}$} which does \emph{not} vary between choices (e.g. income of individuals in the `Fish' data of section~\ref{section: data format and model specification}). 
-\item {\bf Alternative specific variables $\vec{Y}_{ij}$ and $\vec{Z}_{ij}$} which vary with alternative and may also differ, for the same alternative, between individuals (e.g. the amount of fish caught in  the `Fish' data: column `catch'). 
+\item {\bf Individual specific variables $\vec{X}_{i}$} which does \emph{not} vary between choices (e.g., income of individuals in the `Fish' data of Section~\ref{section: data format and model specification}). 
+\item {\bf Alternative specific variables $\vec{Y}_{ij}$ and $\vec{Z}_{ij}$} which vary with alternative and may also differ, for the same alternative, between individuals (e.g., the amount of fish caught in  the `Fish' data: column `catch'). 
 \end{itemize}
-In \pkg{mnlogit} we model these two data types with three types of coefficients\footnote{This is consistent with \pkg{mlogit}.}:
+In \pkg{mnlogit} we model these two data types with three types of coefficients:
 \begin{enumerate}
 \item Individual specific data with alternative specific coefficients $\dotP{X_{i}}{\beta_{j}}$
 \item Alternative specific data with generic coefficients $\dotP{Z_{ik}}{\alpha}$.
@@ -224,7 +215,7 @@ For example in the fish data we may choose both the `price' and `catch' with eit
 
 Due to the principle of utility maximization, only differences between utility are meaningful.
 This implies that the multinomial logit model can not determine absolute utility.
-We must specify the utility for any individual with respect to an arbitrary base value\footnote{In choice model theory this is called `normalizing' the model.}, which we choose to be $0$.
+We must specify the utility for any individual with respect to an arbitrary base value\footnote{In choice model theory this is called `normalizing' the model.} which we choose to be $0$.
 For convenience in notation, we fix the choice indexed by $k=0$ as the base, thus \emph{normalized} utility is given by:
 \begin{align*}
 V_{ik} = U_{ik} - U_{i0} = \xi_{k} - \xi_{0} + \vec{X_i}\cdot(\vec{\beta}_{k} - \vec{\beta}_{0}) + \vec{Y}_{ik}\cdot\vec{\gamma}_{k} - \vec{Y}_{i0}\cdot\vec{\gamma}_{0}+ (\vec{Z}_{ik} - \vec{Z}_{i0})\cdot\vec{\alpha}.
@@ -236,20 +227,20 @@ To simplify notation we re-write the normalized utility as:
 V_{ik} = \xi_{k} + \vec{X_i}\cdot\vec{\beta}_{k} + \vec{Y}_{ik}\cdot\vec{\gamma}_{k} - \vec{Y}_{i0}\cdot\vec{\gamma}_{0}+ \vec{Z}_{ik}\cdot\vec{\alpha} \qquad k \in [1, K-1]
 \end{align}
 This equation retains the same \emph{meaning} as the previous, notice the restriction: $k\neq{}0$, since we need $V_{i0} = 0$.
-The most significant difference is that $\vec{Z}_{ik}$ in equation~\ref{eqn: normalized utility}  stands for: $\vec{Z}_{ik} - \vec{Z}_{i0}$ (in terms of  the original data).
+The most significant difference is that $\vec{Z}_{ik}$ in Equation~\ref{eqn: normalized utility}  stands for: $\vec{Z}_{ik} - \vec{Z}_{i0}$ (in terms of  the original data).
 
-The utility maximization principle, together with the assumtion on the error distribution, implies that for multinomial logit models~\citep{TRAIN:03} the probability of individual $i$ choosing alternative $k$, $P_{ik}$, is given by:
+The utility maximization principle, together with the assumtion on the error distribution, implies that for multinomial logit models~\citep{TRAIN:03} the probability of individual $i$ choosing alternative $k$, $\Prob_{ik}$, is given by:
 \begin{align}
 \label{eqn: probability}
-P_{ik} = P_{i0}e^{V_{ik}}.
+\Prob_{ik} = \Prob_{i0}e^{V_{ik}}.
 \end{align}
-Here $V_{ij}$ is the normalized utility given in equation~\ref{eqn: normalized utility} and $k=0$ is the base alternative with respect to which we normalize utilities.
+Here $V_{ij}$ is the normalized utility given in Equation~\ref{eqn: normalized utility} and $k=0$ is the base alternative with respect to which we normalize utilities.
 The number of available alternatives is taken as $K$ which is a positive integer greater than one.
-From the condition that every individual makes a choice, we have that: $\sum_{k=0}^{k=K-1} P_{ik} = 1$,.
+From the condition that every individual makes a choice, we have that: $\sum_{k=0}^{k=K-1} \Prob_{ik} = 1$,.
 This gives us the probability of individual $i$ picking the base alternative:
 \begin{align}
 \label{eqn: base probability}
-P_{i0} = \frac{1}{1+\sum_{k=1}^{K-1}e^{V_{ik}}}.
+\Prob_{i0} = \frac{1}{1+\sum_{k=1}^{K-1}e^{V_{ik}}}.
 \end{align}
 Note that $K=2$ is the familiar binary logistic regression model.
 
@@ -265,17 +256,17 @@ For a model with $K$ alternative we estimate $K-1$ sets of parameters $\vec{\bet
 \label{subsection: formula interface}
 
 To specify multinomial logit models in \proglang{R} we need an enhanced version of the standard formula interface - one which is able to handle multi-part formulas.  
-%Although this could be built using the \proglang{R} package \pkg{Formula}~\citep{ZEIL:CROIS:10}, \pkg{mnlogit} uses a simple custom written script.
+In \pkg{mnlogit} we built the formula interface using tools from the \proglang{R} package \pkg{Formula}~\citep{ZEIL:CROIS:10}.
 Our formula interface closely confirms to that of the \pkg{mlogit} package.
-We illustrate the formula interface with examples motivated by the `Fish' data (introduced in section~\ref{section: data format and model specification}).
-Consider that we want to fit multinomial logit model where `price' has a generic coefficient, `income' data being individual-specific has an alternative-specific coefficient and the 'catch' also has an alternative-specific coefficient.
-That is, we want to use the 3 types of coefficients described in section~\ref{subsection: parametrization}.
+We illustrate it with examples motivated by the `Fish' dataset (introduced in Section~\ref{section: data format and model specification}).
+Consider a multinomial logit model where `price' has a generic coefficient, `income' data being individual-specific has an alternative-specific coefficient and the `catch' also has an alternative-specific coefficient.
+That is, we want to fit a model that has the 3 types of coefficients described in Section~\ref{subsection: parametrization}.
 Such a model can be specified in \pkg{mnlogit} with a 3-part formula:
 <<eval=FALSE>>=
 fm <- formula(mode ~ price | income | catch)
 @
 By default, the intercept is included, it can be omitted by inserting a `-1' or `0' anywhere in the formula.
-The following formulas specify the same model: 
+The following formulas specify the same model with omitted intercept: 
 <<eval=FALSE>>=
 fm <- formula(mode ~ price | income - 1 | catch)
 fm <- formula(mode ~ price | income | catch - 1)
@@ -297,11 +288,9 @@ fm <- formula(mode ~ price + catch | 1 | 1)
 fm <- formula(mode ~ price + catch | 1) 
 fm <- formula(mode ~ price + catch)
 @
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Using package mnlogit}
+\subsection[Using package mnlogit]{Using package \pkg{mnlogit}}
 \label{subsection: usage mnlogit}
 
 In an \proglang{R} session with \pkg{mnlogit} loaded, the man page can be accessed in the standard way:
@@ -310,12 +299,12 @@ In an \proglang{R} session with \pkg{mnlogit} loaded, the man page can be access
 @
 The complete \code{mnlogit} function call looks like:
 <<eval=FALSE>>=
-mnlogit(formula, data, choiceVar, maxiter = 50, ftol = 1e-6,
-        gtol = 1e-6, weights = NULL, ncores = 1, na.rm = TRUE,   
-        print.level = 0, linDepTol = 1e-6, ...)
+mnlogit(formula, data, choiceVar = NULL, maxiter = 50, ftol = 1e-6, gtol
+        = 1e-6, weights = NULL, ncores = 1, na.rm = TRUE, print.level = 0, 
+        linDepTol = 1e-6, start = NULL, alt.subset = NULL, ...)
 @
 We have described the `formula' and `data' arguments in previous sections while others are explained in the man page, only the `linDepTol' argument needs further elaboration.
-Data used to train the model must satisfy certain necessary conditions so that the Hessian matrix, computed during Newton-Raphson estimation, is full rank (more about this in appendix~\ref{appendix: data requirements for Hessian non-singularity}).
+Data used to train the model must satisfy certain necessary conditions so that the Hessian matrix, computed during Newton-Raphson estimation, is full rank (more about this in Appendix~\ref{appendix: data requirements for Hessian non-singularity}).
 In \pkg{mnlogit} we use the \proglang{R}  built-in function \code{qr}, with its argument `tol' set to `linDepTol', to check for linear dependencies .
 If collinear columns are detected in the data then some are removed so that the remaining columns are linearly independent.
 
@@ -339,8 +328,12 @@ In the `Fish' data the number of alternatives  $K=4$, so the number of coefficie
 Thus the total number of coefficients in this model is $1 + 6 + 4 = 11$.
 
 We call the function \code{mnlogit} to fit the model using the `Fish' dataset on $2$ processor cores.
-<<eval=TRUE>>=
-fit <- mnlogit(fm, Fish, "alt", ncores=2)
+<<eval=FALSE>>=
+fit <- mnlogit(fm, Fish, ncores=2)
+class(fit)
+@
+<<eval=TRUE, echo=FALSE>>=
+fit <- mnlogit(fm, Fish, choiceVar="alt", ncores=2)
 class(fit)
 @
 For \code{mnlogit} class objects we have the usual methods associated with \proglang{R} objects: \code{coef}, \code{print}, \code{summary} and \code{predict} methods.
@@ -349,21 +342,37 @@ In addition, the returned `fit' object can be queried for details of the estimat
 print(fit$est.stats)
 @
 The estimation process terminates when first one of the 3 conditions `maxiter', `ftol' or `gtol' are met.
-In case one runs into numerical singularity problems during the Newton iterations, we recommend relaxing `ftol' or 'gtol' to obtain a suitable estimate.
+In case one runs into numerical singularity problems during the Newton iterations, we recommend relaxing `ftol' or `gtol' to obtain a suitable estimate.
 The plain Newton method has a tendency to overshoot extrema. 
-In \pkg{mnlogit} we have inlcuded a `line search' \footnote{One dimensional minimization along the Newton direction.}, which to avoid this problem and ensures convergence~\citep{NocedalBook}.
+In \pkg{mnlogit} we have inlcuded a `line search' \footnote{One dimensional minimization along the Newton direction.} which avoids this problem and ensures convergence~\citep{NocedalBook}.
 
-Finally we provide the following method so that an \code{mnlogit} object maybe queried for the number and type of model coefficients.
+As a convenience, we provide the following method so that an \code{mnlogit} object maybe queried for the number and type of model coefficients.
 <<>>=
 print(fit$model.size)
 @
 
+Finally there is provision for hypothesis testing.
+We provide the function \code{hmftest} to perform the Hausman-McFadden test for IIA (Independence of Irrelevant Alternatives), which is the central hypothesis underlying multinomial logit models~\citep[Chap. 3]{TRAIN:03}.
+Three functions to test for hypotheses, applicable to any model estimated by the maximum likelihood method, are also provided:
+\begin{itemize}
+\item Function \code{lrtest} to perform the likelihood ratio test.
+\item Function \code{waldtest} to perform the Wald test.
+\item Function \code{scoretest} to perform the Rao score test.
+\end{itemize}
+These intent of these tests is succinctly described in Section 6 `Tests' of the \pkg{mlogit} package vignette and we shall not repeat it here.
+We encourage the interested user to consult the help page for any of these functions in the usual way, for example the \code{lrtest} help maybe accessed by:
+<<eval=FALSE>>=
+library("mnlogit")
+?lrtest
+@
+Functions \code{hmftest} and \code{scoretest} are adapted from code in the \pkg{mlogit} package, while \code{lrtest} and \code{waldtest} are built using tools in the CRAN \proglang{R} package \pkg{lmtest}~\citep{lmtest}. 
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Estimation algorithm}
 \label{section: algorithms and optimization}
 
 In \pkg{mnlogit} we employ maximum likelihood estimation (MLE) to compute model coefficients and use the Newton-Raphson method to solve the optimization problem. 
-The Newton-Raphson method is well established for maximizing the logistic family loglikelihoods (\cite{HastieTibBook},~\cite{TRAIN:03}).
+The Newton-Raphson method is well established for maximizing the logistic family loglikelihoods \citep{HastieTibBook, TRAIN:03}.
 However direct approaches of computing the Hessian of multinomial logit model's log-likelihood function have extremely deleterious effects on the computer time and memory required.
 We present an alternate approach which exploits structure of the  the intermediate data matrices that arise in Hessian calculation  to achieve the same computation \emph{much} faster while using drastically less memory.
 Our approach also allows us to optimally \emph{parallelize} Hessian computation and maximize the use of BLAS (Basic Linear Algebra Subprograms) Level 3 functions, providing an additional factor of speedup.
@@ -390,13 +399,13 @@ A little manipulation gives:
 \label{eqn: log-lik function}
  l(\vect{\theta}) = \sum_{i=1}^{N}\left[ -\text{log}\left(1 + \sum_{k=1}^{K-1}\text{exp}(V_{ik})\right) + \sum_{k=1}^{K-1} V_{ik}I(y_i =k)\right].
 \end{align}
-In the above we make use of the identity $\sum_{k}I(y_i=k) = 1$ and the definition of $P_{i0}$ in equation~\ref{eqn: base probability}.
+In the above we make use of the identity $\sum_{k}I(y_i=k) = 1$ and the definition of $\Prob_{i0}$ in Equation~\ref{eqn: base probability}.
 \cite{MCFAD:74} has shown that the log-likelihood function given above is globally concave.
 A quick argument to demostrate global concavity of $l(\vect{\theta})$ is that it's the sum of affine functions $V_{ik}$ and the negation of the composition of the log-sum-exp function with a set of affine functions.
 \footnote{The log-sum-exp function's convexity and its closedness under affine composition are well known, see for example Chapter 3 of \cite{BoydBook}.}
 
 We solve the optimization problem by the Newton-Raphson (NR) method which requires finding a stationary point of the gradient of the log-likelihood.
-Note that MLE by the Newton-Raphson method is the same as the Fisher scoring algorithm (~\citep{HastieTibBook}, \citep{jialimlogit}).
+Note that MLE by the Newton-Raphson method is the same as the Fisher scoring algorithm \citep{HastieTibBook, jialimlogit}.
 For our log-likelihood function~\ref{eqn: log-lik function}, this point (which we name $\hat{\theta}$) is unique (because of global concavity) and is given by the solution of the equations:
 $\partderiv{l(\vec{\theta})}{\vec{\theta}} = \vec{0}$.
 The NR method is iterative and starting at an initial guess obtains an improved estimate of $\hat{\theta}$ by the equation:  
@@ -404,7 +413,7 @@ The NR method is iterative and starting at an initial guess obtains an improved 
 \label{eqn: NR update}
 \vect{\theta}^{new} = \vect{\theta}^{old} - \mat{H}^{-1} \partderiv{l}{\vect{\theta}}.
 \end{align}
-Here the Hessian matrix, $\mat{H} = \frac{\partial^{2}l}{\partial\vec{\theta}\partial\vec{\theta}^{\prime}}$ and the gradient, $\partderiv{l}{\vect{\theta}}$, are both evaluated at $\vect{\theta}^{old}$. 
+Here the Hessian matrix, $\mat{H} = \frac{\partial^{2}l}{\partial\vec{\theta}\partial\vec{\theta}^{\prime}}$ and the gradient $\partderiv{l}{\vect{\theta}}$, are both evaluated at $\vect{\theta}^{old}$. 
 The vector $\vec{\delta\theta} = -\mat{H}^{-1} \partderiv{l}{\vect{\theta}}$ is called the \emph{full} Newton step.
 In each iteration we attempt to update $\vec{\theta}^{old}$ by this amount.
 However if the log-likelihood value at the resulting $\vec{\theta}^{new}$ is smaller, then we instead try an update of $\vec{\delta\theta}/2$.
@@ -416,14 +425,14 @@ Using such a linesearch procedure guarantees convergence of the Newton-Raphson i
 \label{subsection: gradient and hessian calculation}
 
 Each Newton-Raphson iteration requires computation of the Hessian and gradient of the log-likelihood function.
-The expressions for the gradient and Hessian are quite well known\footnote{See, for example, section 2.5 of \citep{mlogit} and chapter 3 of \citep{TRAIN:03}.} and in there usual form are given by: 
+The expressions for the gradient and Hessian are quite well known\footnote{See for example \citep[Section 2.5]{mlogit} and \citep[Chatper 3]{TRAIN:03}.} and in there usual form are given by: 
 \begin{align}
-\partderiv{l}{\vect{\theta}} &= \sum_{i}\sum_{k} \left(I(y_i = k) - P_{ik}\right) \tilde{X}_{ik} \nonumber \\
-\mat{H} &= -\mat{\tilde{X}}^{T}\mat{\tilde{W}}\mat{\tilde{X}}
+\partderiv{l}{\vect{\theta}} &= \sum_{i}\sum_{k} \left(I(y_i = k) - \Prob_{ik}\right) \tilde{X}_{ik} \nonumber \\
+\mat{H} &= -\mat{\tilde{X}}^\top\mat{\tilde{W}}\mat{\tilde{X}}
 \label{eqn: old Hessian formula}
 \end{align}
 %\mat{H} = \frac{\partial^2{}l}{\partial\vect{\theta}\partial\vect{\theta}^\prime} &= \sum_{i}\sum_{k}  P_{ik} \left(X_{ik} - \sum_{m}P_{im}X_{im}\right)\left(X_{im} - \sum_{m}P_{im}X_{im}\right)^{T} 
-For a model where where only individual specific variables are used (that is only the matrix $\mat{X}$ contributes to the utility in equation~\ref{eqn: normalized utility}), the matrices $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ are given by (\citep{jialimlogit},~\citep{Bohning:92}):
+For a model where where only individual specific variables are used (that is only the matrix $\mat{X}$ contributes to the utility in Equation~\ref{eqn: normalized utility}), the matrices $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ are given by \citep{jialimlogit, Bohning:92}:
 \begin{align*}
    \mat{\tilde{X}}  & = 
    \begin{pmatrix}
@@ -443,19 +452,19 @@ here $\mat{X}$ is a matrix of order $N\times{}p$ ($p$ is the number of variables
     \mat{W_{K-1,1}} & \cdots & \cdots & \mat{W_{K-1,K-1}} \\
     \end{pmatrix}.
 \end{align*}
-Here the sub-matrices $\mat{W_{k,t}}$ are \emph{diagonal} matrices of order $N\times{}N$, where $\text{diag}(\mat{W_{k,t}})_{i} = P_{ik}(\delta_{kt} - P_{it})$ and $\delta_{kt}$ is the Kronecker delta which equals $1$ if $k=t$ and $0$ otherwise. 
+Here the sub-matrices $\mat{W_{k,t}}$ are \emph{diagonal} matrices of order $N\times{}N$, where $\text{diag}(\mat{W_{k,t}})_{i} = \Prob_{ik}(\delta_{kt} - \Prob_{it})$ and $\delta_{kt}$ is the Kronecker delta which equals $1$ if $k=t$ and $0$ otherwise. 
 Using this notation the gradient can be written as~\citep{jialimlogit}:
 \begin{align*}
-\partderiv{l}{\vec{\theta}} = \mat{\tilde{X}}^{T}\left(\vect{y} - \vect{P}\right)
+\partderiv{l}{\vec{\theta}} = \mat{\tilde{X}}^\top\left(\vect{y} - \vect{\Prob}\right)
 \end{align*}
-Where we take vectors $\vect{y}$ and $\vect{P}$ as vectors of length $N \times (K - 1)$, formed by vertically concatenating the $N$ probabilities $P_{ik}$ and responses $I(y_i = k)$,  for each $k\in [1, K-1]$.
-The Newton-Raphson iterations of equation~\ref{eqn: NR update} take the form: 
-$\vect{\theta}^{\text{new}}$ = $\vect{\theta}^{\text{old}} + \left(\mat{\tilde{X}}^{T}\mat{\tilde{W}}\mat{\tilde{X}}\right)^{-1}\mat{\tilde{X}}(\vect{y} - \vect{P})$.
-Although in this section we have shown expressions for models with only individual specific variables, a general formulation of $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ including the two other types of variables appearing in equation~\ref{eqn: normalized utility} exists\footnote{And is implemented in the \proglang{R} packages \pkg{mlogit}~\citep{mlogit} and \pkg{VGAM}~\citep{VGAM}.}.
-This is presented in appendix~\ref{appendix: data requirements for Hessian non-singularity} but their specific form is tangential to the larger point we make (our ideas extend to the general case in a simple way). 
+Where we take vectors $\vect{y}$ and $\vect{\Prob}$ as vectors of length $N \times (K - 1)$, formed by vertically concatenating the $N$ probabilities $\Prob_{ik}$ and responses $I(y_i = k)$,  for each $k\in [1, K-1]$.
+The Newton-Raphson iterations of Equation~\ref{eqn: NR update} take the form: 
+$\vect{\theta}^{\text{new}}$ = $\vect{\theta}^{\text{old}} + \left(\mat{\tilde{X}}^\top\mat{\tilde{W}}\mat{\tilde{X}}\right)^{-1}\mat{\tilde{X}}(\vect{y} - \vect{\Prob})$.
+Although in this section we have shown expressions for models with only individual specific variables, a general formulation of $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ including the two other types of variables appearing in Equation~\ref{eqn: normalized utility} exists\footnote{And is implemented in the \proglang{R} packages \pkg{mlogit}~\citep{mlogit} and \pkg{VGAM}~\citep{VGAM}.}.
+This is presented in Appendix~\ref{appendix: data requirements for Hessian non-singularity} but their specific form is tangential to the larger point we make (our ideas extend to the general case in a simple way). 
 
-An immediate advantage of using the above formulation, is that Newton-Raphson iterations can be carried out using the framework of IRLS (Iteratively Re-weighted Least Squares)\footnote{See section $4.4.1$ of \citep{HastieTibBook}.}  
-IRLS is essentially a sequence of weighted least squares regresions which offers superior numerical stability compared to explicitly forming $\mat{H}$ and directly solving equation~\ref{eqn: NR update} (Lecture 19 of~\cite{TrefethenBook}).
+An immediate advantage of using the above formulation, is that Newton-Raphson iterations can be carried out using the framework of IRLS (Iteratively Re-weighted Least Squares) \citep[Section 4.4.1]{HastieTibBook}. 
+IRLS is essentially a sequence of weighted least squares regresions which offers superior numerical stability compared to explicitly forming $\mat{H}$ and directly solving Equation~\ref{eqn: NR update} \citep[Lecture 19]{TrefethenBook}.
 However this method, besides being easy to implement, is computationally very inefficient.
 The matrices $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ are huge, of orders $(K-1)N \times (K-1)p$ and $N(K-1) \times N(K-1)$ respectively, but are otherwise quite sparse and possess a neat structure. 
 We now describe our approach of exploiting this structured sparsity.   
@@ -464,8 +473,8 @@ We now describe our approach of exploiting this structured sparsity.
 \subsection{Exploiting structure - fast Hessian calculation}
 \label{subsection: exploiting structure}
 
-We focus our attention on computation of the Hessian since it's the most expensive step, as we later show from empirical measurements in table~\ref{table: timing profile} of section~\ref{section: benchmarking performance}.
-We start by ordering the vector $\vec{\theta}$, which  is a concatenation of all model coefficients as specified in equation~\ref{eqn: normalized utility}, in the following manner:
+We focus our attention on computation of the Hessian since it's the most expensive step, as we later show from empirical measurements in Table~\ref{table: timing profile} of Section~\ref{section: benchmarking performance}.
+We start by ordering the vector $\vec{\theta}$, which  is a concatenation of all model coefficients as specified in Equation~\ref{eqn: normalized utility}, in the following manner:
 \begin{align}
 \label{eqn: theta vec}
 \vec{\theta} = \left\lbrace \vec{\beta}_{1}, \vec{\beta}_{2} \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \vec{\gamma}_{1}, \dots  \vec{\gamma}_{K-1}, \vec{\alpha}   \right\rbrace. 
@@ -480,12 +489,12 @@ Differentiating the log-likelihood function with respect to the coefficient vect
 \partderiv{l}{\vec{\theta}_m} =
 \left\{
   \begin{array}{ll}
-  	\mat{M_{m}}^T\left(\vec{y}_{m} - \vec{P}_{m} \right)  & \mbox{ if } \vec{\theta}_{m} \mbox{ is one of } \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
-		\sum_{k=1}\mat{Z_{k}}^T\left(\vec{y}_{k} - \vec{P}_{k} \right) & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
+  	\mat{M_{m}}^\top\left(\vec{y}_{m} - \vec{\Prob}_{m} \right)  & \mbox{ if } \vec{\theta}_{m} \mbox{ is one of } \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
+		\sum_{k=1}\mat{Z_{k}}^\top\left(\vec{y}_{k} - \vec{\Prob}_{k} \right) & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
 	\end{array}
 \right. 
 \end{align}
-Here we have partitioned the gradient vector into \emph{chunks} according to $\vec{\theta}_{m}$ which is a group of coefficients of a particular type (defined in section~\ref{subsection: parametrization}), either alternative specific or generic.
+Here we have partitioned the gradient vector into \emph{chunks} according to $\vec{\theta}_{m}$ which is a group of coefficients of a particular type (defined in Section~\ref{subsection: parametrization}), either alternative specific or generic.
 Subscript $m$ (and subscript $k$) indicates a particular alternative, for example:
 \begin{itemize}
 \item if $\vec{\theta}_{m} = \vec{\beta}_{1}$ then $m=1$
@@ -493,7 +502,7 @@ Subscript $m$ (and subscript $k$) indicates a particular alternative, for exampl
 \item if $\vec{\theta}_{m} = \vec{\gamma}_{1}$ then $m=1$.
 \end{itemize}
 The vector $\vec{y}_{m}$ is a vector of length $N$ whose $i^{th}$ entry is given by $I(y_{i} = m)$, it tells us whether the observed choice of individual $i$ is alternative $m$, or not.
-Similarly $\vec{P}_{m}$ is vector of length whose $i^{th}$ entry is given by $P_{im}$, which is the probability individual $i$ choosing alternative $m$.
+Similarly $\vec{\Prob}_{m}$ is vector of length whose $i^{th}$ entry is given by $\Prob_{im}$, which is the probability individual $i$ choosing alternative $m$.
 The matrices $\mat{M_{m}}$ and $\mat{Z_{k}}$ contain data for choice $m$ and $k$, respectively. 
 Each of these matrices has $N$ rows, one for each individual.
 Specifically: 
@@ -510,22 +519,22 @@ On doing this we can write the Hessian in a very simple and compact \emph{block}
 \mat{H_{nm}}=\frac{\partial^{2}l}{\partial\vec{\theta}_{n}\partial\vec{\theta}_m^{\prime}} =
 \left\{
 	\begin{array}{lll}
-		-\mat{M_{n}}^T\mat{W_{nm}}\mat{M_{m}}  & \mbox{ if } \vec{\theta}_{n}, \vec{\theta_{m}} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
-		-\sum_{k=1}\mat{M_{n}}^T\mat{W_{nk}}\mat{Z_{k}} & \mbox{if } \vec{\theta}_{n} \in  \left\lbrace \vec{\beta}_{1}, \dots  \vec{\gamma}_{K-1} \right\rbrace \mbox{ \& } \vec{\theta}_{m} \mbox{ is } \vec{\alpha} \\
-		-\sum_{k,t=1} \mat{Z_{k}}^T\mat{W_{kt}}\mat{Z_{t}} & \mbox{if } \vec{\theta}_{n} \mbox{ is }  \vec{\alpha}  \mbox{ \& } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
+		-\mat{M_{n}}^\top\mat{W_{nm}}\mat{M_{m}}  & \mbox{ if } \vec{\theta}_{n}, \vec{\theta_{m}} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
+		-\sum_{k=1}\mat{M_{n}}^\top\mat{W_{nk}}\mat{Z_{k}} & \mbox{if } \vec{\theta}_{n} \in  \left\lbrace \vec{\beta}_{1}, \dots  \vec{\gamma}_{K-1} \right\rbrace \mbox{ \& } \vec{\theta}_{m} \mbox{ is } \vec{\alpha} \\
+		-\sum_{k,t=1} \mat{Z_{k}}^\top\mat{W_{kt}}\mat{Z_{t}} & \mbox{if } \vec{\theta}_{n} \mbox{ is }  \vec{\alpha}  \mbox{ \& } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
 	\end{array}
 \right. 
 \end{align}
-Here $\mat{H_{nm}}$ is a block of the Hessian and the matrices $\mat{W_{nm}}$ are \emph{diagonal} matrix of dimension $N\times{}N$, whose $i^{th}$ diagonal entry is given by: $P_{in}(\delta_{nm} - P_{im})$.\footnote{Here $\delta_{nm}$ is the Kronecker delta, which is 1 if $n=m$ and 0 otherwise.}
-The details of taking derivatives in this block-wise fashion are given in appendix~\ref{appendix: log-likelihood differentiation }.
+Here $\mat{H_{nm}}$ is a block of the Hessian and the matrices $\mat{W_{nm}}$ are \emph{diagonal} matrix of dimension $N\times{}N$, whose $i^{th}$ diagonal entry is given by: $\Prob_{in}(\delta_{nm} - \Prob_{im})$.\footnote{Here $\delta_{nm}$ is the Kronecker delta, which is 1 if $n=m$ and 0 otherwise.}
+The details of taking derivatives in this block-wise fashion are given in Appendix~\ref{appendix: log-likelihood differentiation }.
 
-The first thing to observe about equation~\ref{eqn: hessian block} is that effectively utilizes spartsity in the matrices $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ to obtain very \emph{compact} expressions for $\mat{H}$.
+The first thing to observe about Equation~\ref{eqn: hessian block} is that effectively utilizes spartsity in the matrices $\mat{\tilde{X}}$ and $\mat{\tilde{W}}$ to obtain very \emph{compact} expressions for $\mat{H}$.
 The block format of the Hessian matrix is particularly suited for extremely efficient numerical computations.
 Notice that each block can be computed \emph{independently} of other blocks with two matrix multiplications.
 The first of these involves multiplying a diagonal matrix to a dense matrix, while the second requires multiplication of two dense matrices.
 We handle the first multiplication with a handwritten loop which exploits the sparsity of the diagonal matrix, while the second multiplication is handed off to a BLAS (Basic Linear Algebra Subprograms) call for optimal efficiency~\citep{GolubBook}\footnote{Hessian computation is implemented in a set of  optimized \proglang{C++} routines}.
 Computing the Hessian block-by-block is very efficient since we can use level 3 BLAS calls (specifically \code{DGEMM}) to handle the most intensive calculations.
-Another useful property of the Hessian blocks is that because matrices $\mat{W_{nm}}$ are diagonal (hence symmetric), we have the \emph{symmetry property} $\mat{H_{nm}} = \mat{H_{mn}}^{T}$, implying that we only need to compute roughly \emph{half} of the blocks.
+Another useful property of the Hessian blocks is that because matrices $\mat{W_{nm}}$ are diagonal (hence symmetric), we have the \emph{symmetry property} $\mat{H_{nm}} = \mat{H_{mn}}^\top$, implying that we only need to compute roughly \emph{half} of the blocks.
 
 Independence of Hessian blocks leads to a very fruitul strategy for \emph{parallelizing} Hessian calculations: we simply divide the work of computing blocks in the upper triangular part of the Hessian among available threads.
 This strategy has the great advantage that threads don't require any synchronization or communication overhead. 
@@ -533,7 +542,7 @@ However the cost of computing all Hessian blocks is not the same: the blocks inv
 In \pkg{mnlogit} implementation, computation of the blocks involving generic coefficients is handled separately from other blocks and is optimized for serial computation. 
 
 Hessian calculation is, by far, the most time consuming step in solving the multinomial logit MLE problem via the Newton-Raphson method.
-The choice we make in representing the Hessian in the block format of equation~\ref{eqn: hessian block} has dramatic effects on the \emph{time} (and memory) it takes for model estimation.
+The choice we make in representing the Hessian in the block format of Equation~\ref{eqn: hessian block} has dramatic effects on the \emph{time} (and memory) it takes for model estimation.
 In the next section we demonstrate the impact on computation times of this choice when contrasted with earlier approaches.
  
 
@@ -547,8 +556,8 @@ Using simulated data we can easily vary problem size to study performance of the
 Our tests have been performed on a dual-socket, 64-bit Intel machine with 8 cores per socket which are clocked at $2.6$ GHz\footnote{The machine has 128 GB of RAM and 20 MB of shared L3 cache.}.
 \proglang{R} has been natively compiled on this machine using \code{gcc} with BLAS/LAPACK support from single-threaded Intel MKL v11.0.
 
-The 3 types of model coefficients mentioned in section~\ref{subsection: parametrization} entail very different computational requirements.
-In particular it can be seen from equations~\ref{eqn: loglik gradient} and~\ref{eqn: hessian block}, that Hessian and gradient calculation is computationally  very demanding  for generic coefficients.
+The 3 types of model coefficients mentioned in Section~\ref{subsection: parametrization} entail very different computational requirements.
+In particular it can be seen from Equations~\ref{eqn: loglik gradient} and~\ref{eqn: hessian block}, that Hessian and gradient calculation is computationally  very demanding  for generic coefficients.
 For clear-cut comparisons we speed test the code with 4 types of problems described below. 
 In our results we shall use $K$ to denote the number of alternatives and $n_{p}$ to denote the total number of coefficients in the model.
 \begin{enumerate}
@@ -558,13 +567,13 @@ In our results we shall use $K$ to denote the number of alternatives and $n_{p}$
 \item {\bf Problem `YZ':} Same type of data as problem `Y' but with a mixture of alternative specific and generic coefficients.
 \end{enumerate}
 Although problem `X' maybe considered a special case of problem `Y' but we have considered it separately, because it's typically used in machine learning domains as the simplest linear multiclass classifier~\citep{HastieTibBook}. 
-We shall also demonstrate that \pkg{mnlogit} runs much faster for this class of problems.\footnote{And use it to compare with the \proglang{R} packages \pkg{VGAM} and \pkg{nnet} which run \emph{only} this class of problems (see appendix~\ref{appendix: timing tests}).}
+We shall also demonstrate that \pkg{mnlogit} runs much faster for this class of problems.\footnote{And use it to compare with the \proglang{R} packages \pkg{VGAM} and \pkg{nnet} which run \emph{only} this class of problems (see Appendix~\ref{appendix: timing tests}).}
 The `YZ' class of problems serves to illustrate a common use case of multinomial logit models in econometrics where the data may vary with both individuals and alternatives while the coefficients are a mixture of alternative specific and generic types (usually only a small fraction of variables are modeled with generic coefficients). 
 
 The workings of \pkg{mnlogit} can be logically broken up into 3 steps:
 \begin{enumerate}
 \item Pre-processing: Where the model formula is parsed and matrices are assembled from a user supplied \code{data.frame}. 
-We also check the data for collinear columns (and remove them) to satisfy certain necessary conditions, specified in appendix~\ref{appendix: data requirements for Hessian non-singularity}, for the Hessian to be non-singular.
+We also check the data for collinear columns (and remove them) to satisfy certain necessary conditions, specified in Appendix~\ref{appendix: data requirements for Hessian non-singularity}, for the Hessian to be non-singular.
 \item Newton-Raphson Optimization: Where we maximize the log-likelihood function to estimate model coefficients.
 This  involves solving a linear system of equations and one needs to compute the log-likelihood function's gradient vector and  Hessian matrix.
 \item Post-processing: All work needed to take the estimated coefficients and returning an object of class \code{mnlogit}.
@@ -591,17 +600,17 @@ Problem `YZ' has $45$ variables modeled with individual specific coefficients wh
 }
 \label{table: timing profile}
 \end{table}
-Notice the very high pre-processing time for problem `Z' whereof a large portion is spent in ensuring that the data satisfies necessary conditions, mentioned in appendix~\ref{appendix: data requirements for Hessian non-singularity}, for the Hessian to be non-singular.
+Notice the very high pre-processing time for problem `Z' whereof a large portion is spent in ensuring that the data satisfies necessary conditions, mentioned in Appendix~\ref{appendix: data requirements for Hessian non-singularity}, for the Hessian to be non-singular.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Comparing mnlogit performance}
+\subsection[Comparing mnlogit performance]{Comparing \pkg{mnlogit} performance}
 \label{subsection: comparing mnlogit performance}
 
 We now compare the performance of \pkg{mnlogit} in \emph{single-threaded} mode with some other \proglang{R} packages.
 This section focuses on the comparison with the \proglang{R} package \pkg{mlogit} since it's the only one which covers the entire range of variable and data types as \pkg{mnlogit}.
 Appendix~\ref{appendix: timing tests} contains a synopsis of our data generation and timing methods including a comparison of \pkg{mnlogit} with the \proglang{R} packages \pkg{VGAM} and \pkg{nnet}.
 
-Table~\ref{table: relative times with mlogit} shows the ratio between \pkg{mlogit} and \pkg{mnlogit} running times for the 4 classes of problems considered in table~\ref{table: timing profile}.
+Table~\ref{table: relative times with mlogit} shows the ratio between \pkg{mlogit} and \pkg{mnlogit} running times for the 4 classes of problems considered in Table~\ref{table: timing profile}.
 We see that for most problems, except those of type `Z', \pkg{mnlogit} outperforms \pkg{mlogit} by a large factor.
 \begin{table}[t!]
 \centering
@@ -609,25 +618,25 @@ We see that for most problems, except those of type `Z', \pkg{mnlogit} outperfor
 \hline
 \textbf{Optimizer} & \multicolumn{3}{|c||}{\textbf{Newton-Raphson}} & \multicolumn{3}{|c|}{\textbf{BFGS}} \\ \hline
 \textbf{K}       & \textbf{10} & \textbf{20} & \textbf{30} & \textbf{10} & \textbf{20} & \textbf{30} \\ \hline
-problem X  & 18.9 &  37.3 & 48.4 &  14.7 &  29.2 & 35.4  \\ \hline  	
-problem Y  &	13.8 &	20.6	& 33.3  &  14.9 &  18.0 & 23.9	\\ \hline	
-problem YZ & 10.5 &	22.8	& 29.4	 &  10.5 &  17.0 & 20.4   \\ \hline
-problem Z & 1.16 &	1.31	& 1.41	 &  1.01 &  0.98 & 1.06   \\ \hline
+Problem X  & 18.9 &  37.3 & 48.4 &  14.7 &  29.2 & 35.4  \\ \hline  	
+Problem Y  &	13.8 &	20.6	& 33.3  &  14.9 &  18.0 & 23.9	\\ \hline	
+Problem YZ & 10.5 &	22.8	& 29.4	 &  10.5 &  17.0 & 20.4   \\ \hline
+Problem Z & 1.16 &	1.31	& 1.41	 &  1.01 &  0.98 & 1.06   \\ \hline
 \end{tabular}
 \caption{ 
 Ratio between \pkg{mlogit} and \pkg{mnlogit} total running times on a single processor for problems of various sizes and types. 
 Each problem has $50$ variables with $K$ alternatives and $N = 50*K*20$ observations to train the model.
 \pkg{mlogit} has been run separately with two optimizers: Newton-Raphson and BFGS.
 In all cases the iterations terminated when the difference between log-likelihoods in successive iterations reduced below $10^{-6}$.
-NOTE: These numbers can vary depending on the BLAS implementation linked to \proglang{R} and hardware specifications. 
+Note: These numbers can vary depending on the BLAS implementation linked to \proglang{R} and hardware specifications. 
 }
 \label{table: relative times with mlogit}
 \end{table}
-We have not run larger problems for this comparison because \pkg{mlogit} running times become too long, except problem `Z'\footnote{In this case with $K=100$ and keeping other parameters the same as table~\ref{table: relative times with mlogit}, \pkg{mnlogit} outperforms \pkg{mlogit} by factors of $1.35$ and $1.26$ while running the NR and BFGS, respectively.}.
+We have not run larger problems for this comparison because \pkg{mlogit} running times become too long, except problem `Z'\footnote{In this case with $K=100$ and keeping other parameters the same as Table~\ref{table: relative times with mlogit}, \pkg{mnlogit} outperforms \pkg{mlogit} by factors of $1.35$ and $1.26$ while running the NR and BFGS, respectively.}.
 
 
 Besides Newton-Raphson, which is the default, we have also run \pkg{mlogit} with the BFGS optimizer.
-Typically the BFGS method, part of the quasi-Newton class of methods, takes more iterations than the Newton method but with significantly lower cost per iteration since it never directly computes the Hessian matrix..
+Typically the BFGS method, part of the quasi-Newton class of methods, takes more iterations than the Newton method but with significantly lower cost per iteration since it never directly computes the Hessian matrix.
 Typically for large problems the cost of computing the Hessian becomes too high and the BFGS method  becomes overall faster than the Newton method~\citep{NocedalBook}.
 Our approach in \pkg{mnlogit} attacks this weakness of the Newton method by exploiting the structure and sparsity in matrices involved in the Hessian calculation to enable it to outperform BFGS.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -637,12 +646,12 @@ Our approach in \pkg{mnlogit} attacks this weakness of the Newton method by expl
 \label{subsection: Parallel performance}
 
 We now now turn to benchmarking \pkg{mnlogit's} parallel performance. 
-Figure~\ref{fig: hessian parallel speedup} shows the speedups we obtain in \emph{Hessian calculation} for the same problems considered in table~\ref{table: timing profile}.
+Figure~\ref{fig: hessian parallel speedup} shows the speedups we obtain in Hessian calculation for the same problems considered in Table~\ref{table: timing profile}.
 %%%%%%
 \begin{figure}[t]
 \centering \includegraphics[width=0.8\textwidth]{HessSpeedups.pdf}
 \caption{
-Parallel \emph{Hessian calculation} speedup (ratio of parallel to single thread running time) for 2, 4, 8, 16, processor cores for problems of table~\ref{table: timing profile}.
+Parallel Hessian calculation speedup (ratio of parallel to single thread running time) for 2, 4, 8, 16, processor cores for problems of Table~\ref{table: timing profile}.
 The dashed `Linear Speedup' guideline represents perfect parallelization.
 }
 \label{fig: hessian parallel speedup}
@@ -652,16 +661,16 @@ The value of $n_p$, the number of model parameters, is significant because it's 
 We run the parallel code separately on 2, 4, 8, 16 processor cores, comparing in each case with the single core time. 
 Figure~\ref{fig: hessian parallel speedup} shows that it's quite profitable to parallelize problems `X' and `Y', but the gains for problem 'Z' are not too high.
 This is because of a design choice we make: Hessian calculation for type `Z' variables is optimized for serial processing. 
-In practical modeling, number of model coefficients associated with `Z' types variable is not high, especially when compared to those of types `X' and `Y' (because the number of the coefficients of these types is also proportional to the number of choices in the model, see section~\ref{subsection: usage mnlogit}).
+In practical modeling, number of model coefficients associated with `Z' types variable is not high, especially when compared to those of types `X' and `Y' (because the number of the coefficients of these types is also proportional to the number of choices in the model, see Section~\ref{subsection: usage mnlogit}).
 For problems of type `YZ' (or other combinations which involve `Z'), parallelization can bring significant gains if the number of model coefficients of type `Z' is low, relative to other types.
 
 It can also be seen from figure~\ref{fig: hessian parallel speedup} that, somewhat mysteriously,  parallel performance degrades quickly as the number of processor cores is increased beyond $4$. 
 This is a consequence of the fact that our OpenMP progam runs on a machine with shared cache and main memory, so increasing the number of threads degrades performance by increasing the chance of cache misses and hence slowing memory lookups.
 This is an intrinsic limitation of our hardware for which there is a  \emph{theoretically simple} solution: run the program on a machine with a larger cache!
 
-An important factor to consider in parallel speedups of the \emph{whole program} is Amdahl's Law\footnote{See chapter 6 of~\cite{openmpBook}.} which limits the maximum speedup that maybe be achieved by any parallel program.
+An important factor to consider in parallel speedups of the \emph{whole program} is Amdahl's Law\footnote{See Chapter 6 of~\cite{openmpBook}.} which limits the maximum speedup that maybe be achieved by any parallel program.
 Assuming parallelization between $n$ threads, Amdahl's law states that the ultimate speedup is given by: $S_{n} = \frac{1}{f_{s} + \left(1 - f_{s}\right)/n}$, where $f_s$ is the fraction of non-parallelized, serial code.
-Table~\ref{table: S infinty} lists the observed speedups on $2$, $4$ and $8$ processor coress  together with $f_{s}$ for problems of table~\ref{table: timing profile}.
+Table~\ref{table: S infinty} lists the observed speedups on $2$, $4$ and $8$ processor coress  together with $f_{s}$ for problems of Table~\ref{table: timing profile}.
 %%%%%
 \begin{table}[h]
 \centering
@@ -703,90 +712,87 @@ Where applicable, inexact Newton methods have the promise of being better than l
 In the future we shall apply inexact Newton methods to estimating multinomial logit models to study their convergence properties and performance.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\subsection*{Acknowledgements}
+\section*{Acknowledgements}
 
 We would like to thank Florian Oswald of the Economics Department at University College London for contributing code for the \code{predict.mnlogit} method.
 We are also grateful to numerous users of \pkg{mnlogit} who gave us suggestions for improving the software and reported bugs.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\section*{Appendix}
-
-\begin{appendices}
+\appendix
 
 \section{Log-likelihood differentiation}
 \label{appendix: log-likelihood differentiation }
 
-In this appendix we give the details of our computation of gradient and Hessian of the log-likelihood function in equation~\ref{eqn: log-lik function}.
-We make use of the notation of section~\ref{subsection: exploiting structure}. 
+In this Appendix we give the details of our computation of gradient and Hessian of the log-likelihood function in Equation~\ref{eqn: log-lik function}.
+We make use of the notation of Section~\ref{subsection: exploiting structure}. 
 Taking the derivative of the log-likelihood with respect to a \emph{chunk} of coefficient $\vec{\theta}_{m}$ one gets:
 \begin{align*}
-\partderiv{l}{\vec{\theta}_m} = \sum_{i=1}^{N} \left[ \frac{1}{P_{i0}} \partderiv{P_{i0}}{\vec{\theta}_{m}} + \sum_{k=1}^{K-1}I(y_i = k)\partderiv{V_{ik}}{\vec{\theta}_{m}} \right].
+\partderiv{l}{\vec{\theta}_m} = \sum_{i=1}^{N} \left[ \frac{1}{\Prob_{i0}} \partderiv{\Prob_{i0}}{\vec{\theta}_{m}} + \sum_{k=1}^{K-1}I(y_i = k)\partderiv{V_{ik}}{\vec{\theta}_{m}} \right].
 \end{align*}
-The second term in this equation is a constant term, since the utility $V_{ik}$, defined in equation~\ref{eqn: normalized utility}, is a linear function of the coefficients. 
+The second term in this equation is a constant term, since the utility $V_{ik}$, defined in Equation~\ref{eqn: normalized utility}, is a linear function of the coefficients. 
 Indeed we have:
 \begin{align}
 \label{eqn: gradient of utility}
- \sum_{i=1}^{N}\sum_{k=1}^{K-1}I(y_i = k) \partderiv{V_{ik}}{\vect{\theta_{m}}} =
+ \sum_{i=1}^{N}\sum_{k=1}^{K-1}I(y_i = k) \partderiv{V_{ik}}{\vect{\theta}_{m}} =
 \left\{
 	\begin{array}{ll}
-		\mat{M_{m}}^{T}\vect{y}_{m}& \mbox{ if } \vec{\theta}_{m} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
-		 \sum_{k=1}\mat{Z_{k}}^{T}\vect{y_{k}} & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
+		\mat{M_{m}}^\top\vect{y}_{m}& \mbox{ if } \vec{\theta}_{m} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
+		 \sum_{k=1}\mat{Z_{k}}^\top\vect{y_{k}} & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
 	\end{array}
 \right. 
 \end{align}
-The vectors $\vect{y}_{m}$ and the matrices $\mat{M_{m}}$ and $\mat{Z_{k}}$ are specified in section~\ref{subsection: exploiting structure}.
-We take the derivative of the base case probability, which is specified in equation~\ref{eqn: base probability}, as follows:
+The vectors $\vect{y}_{m}$ and the matrices $\mat{M_{m}}$ and $\mat{Z_{k}}$ are specified in Section~\ref{subsection: exploiting structure}.
+We take the derivative of the base case probability, which is specified in Equation~\ref{eqn: base probability}, as follows:
 \begin{align}
 \label{eqn: base prob deriv}
-\sum_{i=1}^{N}\frac{1}{P_{i0}}\partderiv{P_{i0}}{\vec{\theta}_{m}} =
+\sum_{i=1}^{N}\frac{1}{\Prob_{i0}}\partderiv{\Prob_{i0}}{\vec{\theta}_{m}} =
 \left\{
 	\begin{array}{ll}
-		-\mat{M_{m}}^{T}\cdot\vec{P}_{m}& \mbox{ if } \vec{\theta}_{m} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
-		 -\sum_{k=1}\mat{Z_{k}}^{T}\vec{P}_{k} & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
+		-\mat{M_{m}}^\top\cdot\vec{\Prob}_{m}& \mbox{ if } \vec{\theta}_{m} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
+		 -\sum_{k=1}\mat{Z_{k}}^\top\vec{\Prob}_{k} & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
 	\end{array}
 \right. 
 \end{align}
-Here the probability vector $\vect{P}_{m}$ is of length $N$ with entries $P_{im}$.
+Here the probability vector $\vect{\Prob}_{m}$ is of length $N$ with entries $\Prob_{im}$.
 In the last line we have used the fact that, after normalization, $\mat{Z}_{0}$ is $\mat{0}$.
-Using equations~\ref{eqn: gradient of utility} and~\ref{eqn: base prob deriv} we get the gradient in the form shown in equation~\ref{eqn: loglik gradient}.
+Using Equations~\ref{eqn: gradient of utility} and~\ref{eqn: base prob deriv} we get the gradient in the form shown in Equation~\ref{eqn: loglik gradient}.
 
-Upon differentiating the probability vector $\vec{P}_{k}$ ($k\geq 1$) in equation~\ref{eqn: probability} with respect to $\vec{\theta}_{m}$ we get:
+Upon differentiating the probability vector $\vec{\Prob}_{k}$ ($k\geq 1$) in Equation~\ref{eqn: probability} with respect to $\vec{\theta}_{m}$ we get:
 \begin{align}
 \label{eqn: probability deriv}
-\partderiv{\vec{P}_{k}}{\vec{\theta}_{m}} = 
+\partderiv{\vec{\Prob}_{k}}{\vec{\theta}_{m}} = 
 \left\{
   \begin{array}{ll}
 		\mat{W_{km}}\mat{M_{m}}  & \mbox{ if } \vec{\theta}_{m} \in \left\lbrace \vec{\beta}_{1}, \dots \vec{\beta}_{K-1}, \vec{\gamma}_{0}, \dots  \vec{\gamma}_{K-1} \right\rbrace \\
-		\mat{D}(\vec{P}_{k}) \left( \mat{Z_{k}} - \sum_{t=1}\mat{Z_{t}}\mat{D}(\vec{P}_{t})\right) & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
+		\mat{D}(\vec{\Prob}_{k}) \left( \mat{Z_{k}} - \sum_{t=1}\mat{Z_{t}}\mat{D}(\vec{\Prob}_{t})\right) & \mbox{if } \vec{\theta}_{m} \mbox{ is } \vec{\alpha}
 	\end{array}
 \right. 
 \end{align}
-where $\mat{D}(\vec{P}_{k})$ is an $N\times{}N$ \emph{diagonal matrix}
-whose $i^{th}$ diagonal entry is $P_{ik}$ and, matrix $\mat{W_{km}}$ is also an an $N\times{}N$ \emph{diagonal matrix} whose $i^{th}$ diagonal entry is $P_{ik}(\delta_{km} - P_{im})$. 
-In matrix form this is: $\mat{W_{km}} =  \delta_{km}\mat{D}(\vec{P}_{k})  - \mat{D}(\vec{P}_{k})\mat{D}(\vec{P}_{m})$.
-\footnote{$\delta_{km}$ is the Kronecker delta, which is $1$ if $k=m$ and zero otherwise}.
+where $\mat{D}(\vec{\Prob}_{k})$ is an $N\times{}N$ \emph{diagonal matrix}
+whose $i^{th}$ diagonal entry is $\Prob_{ik}$ and, matrix $\mat{W_{km}}$ is also an an $N\times{}N$ \emph{diagonal matrix} whose $i^{th}$ diagonal entry is $\Prob_{ik}(\delta_{km} - \Prob_{im})$. 
+In matrix form this is: $\mat{W_{km}} =  \delta_{km}\mat{D}(\vec{\Prob}_{k})  - \mat{D}(\vec{\Prob}_{k})\mat{D}(\vec{\Prob}_{m})$ where $\delta_{km}$ is the Kronecker delta.
 
 We write the Hessian of the log-likelihood in \emph{block} form as:
 \begin{align*}
-\mat{H_{nm}}=\frac{\partial^{2}l}{\partial\vec{\theta}_{n}\partial\vec{\theta}_{m}^{\prime}} = \sum_{i=1}^{N} \left[\frac{1}{P_{i0}}\frac{\partial^2P_{i0}}{\partial\vec{\theta}_{n}\partial\vec{\theta}_{m}^{\prime}} - \frac{1}{P_{i0}^{2}} \partderiv{P_{i0}}{\vec{\theta}_{n}}  \partderiv{P_{i0}}{\vec{\theta}_{m}}\right].
+\mat{H_{nm}}=\frac{\partial^{2}l}{\partial\vec{\theta}_{n}\partial\vec{\theta}_{m}^{\prime}} = \sum_{i=1}^{N} \left[\frac{1}{\Prob_{i0}}\frac{\partial^2 \Prob_{i0}}{\partial\vec{\theta}_{n}\partial\vec{\theta}_{m}^{\prime}} - \frac{1}{\Prob_{i0}^{2}} \partderiv{\Prob_{i0}}{\vec{\theta}_{n}}  \partderiv{\Prob_{i0}}{\vec{\theta}_{m}}\right].
 \end{align*}
 However it can be derived in a simpler way by differentiating the gradient with respect to $\vec{\theta}_{n}$.
-Doing this and making use of equation~\ref{eqn: probability deriv} gives us equation~\ref{eqn: hessian block}.
-The first two cases of equation are fairly straightforward with the matrices $\mat{W}_{km}$ being the same as shown in equation~\ref{eqn: probability deriv}.
+Doing this and making use of Equation~\ref{eqn: probability deriv} gives us Equation~\ref{eqn: hessian block}.
+The first two cases of equation are fairly straightforward with the matrices $\mat{W}_{km}$ being the same as shown in Equation~\ref{eqn: probability deriv}.
 The third case, when ($\vec{\theta}_{n}, \vec{\theta}_{m}$ are both $\vec{\alpha})$,  is a bit messy and we describe it here.
 \begin{align*}
-\mat{H_{nm}} &= -\sum_{k=1}^{K-1}\left[ \mat{Z_{k}}^{T}\mat{D}(\vec{P}_{k}) \left( \mat{Z_{k}} - \sum_{t=1}^{K-1}\mat{D}(\vec{P}_{t})\mat{Z_{t}} \right) \right] \\
-&= -\sum_{k=1}^{K-1}\sum_{t=1}^{K-1} \mat{Z_{k}}^{T} \left[ \delta_{kt}\mat{D}(\vec{P}_{k})  - \mat{D}(\vec{P}_{k})\mat{D}(\vec{P}_{t})  \right] \mat{Z_{t}} \\
-&= -\sum_{k=1}\sum_{t=1} \mat{Z_{k}}^{T} \mat{W_{kt}} \mat{Z_{t}}.
+\mat{H_{nm}} &= -\sum_{k=1}^{K-1}\left[ \mat{Z_{k}}^\top\mat{D}(\vec{\Prob}_{k}) \left( \mat{Z_{k}} - \sum_{t=1}^{K-1}\mat{D}(\vec{\Prob}_{t})\mat{Z_{t}} \right) \right] \\
+&= -\sum_{k=1}^{K-1}\sum_{t=1}^{K-1} \mat{Z_{k}}^\top \left[ \delta_{kt}\mat{D}(\vec{\Prob}_{k})  - \mat{D}(\vec{\Prob}_{k})\mat{D}(\vec{\Prob}_{t})  \right] \mat{Z_{t}} \\
+&= -\sum_{k=1}\sum_{t=1} \mat{Z_{k}}^\top \mat{W_{kt}} \mat{Z_{t}}.
 \end{align*}
-Here the last line follows from the definition of matrix $\mat{W_{kt}}$ as used in equation~\ref{eqn: probability deriv}.
+Here the last line follows from the definition of matrix $\mat{W_{kt}}$ as used in Equation~\ref{eqn: probability deriv}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Data requirements for Hessian non-singularity}
 \label{appendix: data requirements for Hessian non-singularity}
 
 We derive necessary conditions on the data for the Hessian to be non-singular.
-Using notation from section~\ref{subsection: gradient and hessian calculation}, we start by building a `design matrix' $\mat{\tilde{X}}$ by concatenating data matrices $\mat{X}$, $\mat{Y_{k}}$ and  $\mat{Z_{k}}$ in the following format:
+Using notation from Section~\ref{subsection: gradient and hessian calculation}, we start by building a `design matrix' $\mat{\tilde{X}}$ by concatenating data matrices $\mat{X}$, $\mat{Y_{k}}$ and  $\mat{Z_{k}}$ in the following format:
 \begin{align}
 \label{eqn: IRLS design mat}
    \mat{\tilde{X}}  & = 
@@ -827,11 +833,11 @@ Using the 2 matrices above we define a `weight' matrix $\mat{\tilde{W}}$:
    \mat{\tilde{W}}  & = 
    \begin{pmatrix}
      \mat{Q} & \mat{Q_{0}} & \mat{Q} \\
-     \mat{Q_{0}}^{T} & \mat{W_{00}} & \mat{Q_{0}}^{T} \\
+     \mat{Q_{0}}^\top & \mat{W_{00}} & \mat{Q_{0}}^\top \\
      \mat{Q} & \mat{Q_{0}} & \mat{Q} \\
     \end{pmatrix},  
 \end{align}
-The full Hessian matrix, containing all the blocks of equation~\ref{eqn: hessian block}, is given by: $\mat{H} = \mat{\tilde{X}}^{T}\mat{\tilde{W}}\mat{\tilde{X}}$.
+The full Hessian matrix, containing all the blocks of Equation~\ref{eqn: hessian block}, is given by: $\mat{H} = \mat{\tilde{X}}^\top \mat{\tilde{W}}\mat{\tilde{X}}$.
 For the matrix $\mat{H}$ to be non-singular, we must have the matrix $\mat{\tilde{X}}$ be full-rank.
 This leads us to the following \emph{necessary conditions} on the data for the Hessian to be non-singular:
 \begin{enumerate}
@@ -841,10 +847,10 @@ This leads us to the following \emph{necessary conditions} on the data for the H
 In \pkg{mnlogit} we directly test condition 1, while the second condition is tested by checking for collinearity among the columns of the matrix\footnote{Since number of rows is less than the number of columns}:
    \[\begin{pmatrix}
      \mat{Z_{1}}\quad \mat{Z_{2}}\quad \hdots\quad \mat{Z_{K-1}}
-    \end{pmatrix}^{T}.\]
+    \end{pmatrix}^\top.\]
 Columns are arbitrarily dropped one-by-one from a collinear set until the remainder becomes linearly independent.
 
-{\it Another necessary condition:} It can be shown with some linear algebra manipulations (omitted because they aren't illuminating) that if we have a model with has \emph{only}: data for generic variables independent of alternatives \emph{and} the intercept, then the resulting Hessian will always be singular. 
+{\bf Another necessary condition:} It can be shown with some linear algebra manipulations (omitted because they aren't illuminating) that if we have a model with has \emph{only}: data for generic variables independent of alternatives \emph{and} the intercept, then the resulting Hessian will always be singular. 
 \pkg{mnlogit} does not attempt to check the data for this condition which is independent of the 2 necessary conditions given above.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -854,14 +860,14 @@ Columns are arbitrarily dropped one-by-one from a collinear set until the remain
 We give the details of our simulated data generation process and how we setup runs of the \proglang{R} packages \pkg{mlogit}, \pkg{VGAM} and \pkg{nnet} to compare running times against \pkg{mnlogit}.
 We start by loading \pkg{mlogit}  into an \proglang{R} session:
 <<results=hide>>=
-library(mlogit)
+library("mlogit")
 @
-Next we generate data in the `long format' (described in section~\ref{section: data format and model specification}) using the \code{makeModel} function sourced from the file \code{simChoiceModel.R} which is in the \code{mnlogit/vignettes/} folder.
-The data we use for the timing tests shown here is individual specific (problem `X' of section~\ref{section: benchmarking performance}) because this is the only one that packages \pkg{VGAM} and \pkg{nnet} can run.
+Next we generate data in the `long format' (described in Section~\ref{section: data format and model specification}) using the \code{makeModel} function sourced from the file \code{simChoiceModel.R} which is in the \code{mnlogit/vignettes/} folder.
+The data we use for the timing tests shown here is individual specific (problem `X' of Section~\ref{section: benchmarking performance}) because this is the only one that packages \pkg{VGAM} and \pkg{nnet} can run.
 We generate data for a model with $K$ choices as shown below.
 <<>>=
 source("simChoiceModel.R")
-data <- makeModel('X', K=5)
+data <- makeModel('X', K=3)
 @
 Default arguments of \code{makeModel} set the number of variables and the number of observations, which are:
 <<echo=FALSE>>=
@@ -877,9 +883,9 @@ The next steps setup a \code{formula} object which specifies that  individual sp
 vars <- paste("X", 1:50, sep="", collapse=" + ")
 fm <- formula(paste("response ~ 1|", vars, " - 1 | 1"))
 @
-Using this formula and our previously generated \code{data.frame} we run \pkg{mnlogit} to measure its running time.
+Using this formula and our previously generated \code{data.frame} we run \pkg{mnlogit} to measure its running time (in single threaded mode).
 <<>>=
-system.time(fit.mnlogit <- mnlogit(fm, data, "choices"))  # runs on 1 proc
+system.time(fit.mnlogit <- mnlogit(fm, data, "choices"))  
 @
 Likewise we measure running times for \pkg{mlogit} running the same problem with the Newton-Raphson (the default) and the BFGS optimizers.
 <<eval=T>>=
@@ -890,31 +896,31 @@ system.time(fit.mlogit <- mlogit(fm, mdat, method='bfgs'))
 @
 Here the first step is necessary to turn the \code{data.frame} object into an \code{mlogit.data} object required by \pkg{mlogit}.
 The default stopping conditions for \pkg{mnlogit} and \pkg{mlogit} are exactly the same.
-The timing results shown in table~\ref{table: relative times with mlogit} were obtained in a similar way but with different formulas for each type of problem.
+The timing results shown in Table~\ref{table: relative times with mlogit} were obtained in a similar way but with different formulas for each type of problem.
 All our tests use the function \code{makeModel} to generate data. 
 
 For comparison with \pkg{nnet} we must make a few modifications: first we turn the data into a format required by \pkg{nnet} and then change the stopping conditons from their default to (roughly) match \pkg{mnlogit} and \pkg{mlogit}.
 We set the stopping tolerance so that `reltol' controls convergence and roughly corresponds at termination to `ftol' in these packages.
 Note that \pkg{nnet} runs the BFGS optimizer.
 <<>>=
-library(nnet)
+library("nnet")
 ndat <- data[which(data$response > 0), ]
-ff <- paste("choices ~", vars, "- 1")   # formula for nnet
-system.time(fit.nnet <- multinom(ff, ndat, reltol=1e-12)) 
+fm.nnet <- paste("choices ~", vars, "- 1")   
+system.time(fit.nnet <- multinom(fm.nnet, ndat, reltol=1e-12)) 
 @
-We remind the user that since \pkg{nnet} and \pkg{VGAM} only handle individual specific data, we can't test them on all the classes of problems listed in table~\ref{table: relative times with mlogit}.
+We remind the user that since \pkg{nnet} and \pkg{VGAM} only handle individual specific data, we can't test them on all the classes of problems listed in Table~\ref{table: relative times with mlogit}.
 To apply the same timing test to the \code{vglm} function from package \pkg{VGAM}, we first set the stopping condition to match the default condition for \pkg{mnlogit} and \pkg{mlogit} (\code{ftol = 1e-6}).
 <<>>=
-library(VGAM)
-stop.vglm <- vglm.control(epsilon = 1e-6)
-system.time(fit.vglm <- vglm(ff, data=ndat, multinomial, control=stop.vglm))
+library("VGAM")
+eps <- vglm.control(epsilon = 1e-6)
+system.time(fit.vglm <- vglm(fm.nnet, data=ndat, multinomial, control=eps))
 @
 
-NOTE: The precise times running times reported on compiling this Sweave document depend strongly on the machine, whether other programs are also running simultaneously and the BLAS implementation linked to \proglang{R}.
+Note: The precise times running times reported on compiling this Sweave document depend strongly on the machine, whether other programs are also running simultaneously and the BLAS implementation linked to \proglang{R}.
 For reproducible results run on a `quiet' machine (with no other programs running).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-\end{appendices}
+%\end{appendices}
 
 \bibliography{mnlogit}
 \end{document}

@@ -10,7 +10,7 @@
 #                           
 ###############################################################################
 # Argument: 
-#   f - formula object or anything coercable to a formula object
+#   f - formula object or anything coercable to a Formula object
 #
 # Output: 
 #  Input formula object with attributes:
@@ -24,52 +24,52 @@
 #
 # Note: 
 #    1. Presence of '-1' or '0' indicates intercept is turned of 
-#    2. To NOT include any variable sometype, use a '1' as a placeholder
+#    2. To NOT include any variable type, use a '1' as a placeholder
 ###############################################################################
 parseFormula <- function(f)
-{     
-    # Coerce to formula type
-    f <- as.formula(f)
-    call <- f
-    attr(call, "varNames") <- all.vars(f) # get all variable names
+{
+   if (!is.Formula(f)) f <- Formula(f)
+   call <- formula(f)
+   attr(call, "varNames") <- all.vars(f)
+   numLHS <- length(f)[1]
+   numRHS <- length(f)[2]
 
-    # Split the formula into LHS & RHS, separator: ~
-    f <- as.character(f) 
-    if (f[1] != "~" || length(f) < 3)
-        stop("Not a valid formula")
-    response <- f[2]
+   # Checking
+   if (numLHS != 1 && numRHS >= 1 && numRHS <= 3)
+       stop("Invalid formula supplied.")
+   
+   # Get response
+   lhsTerms <- terms(f, lhs=1, rhs=0)
+   response <- all.vars(attr(lhsTerms, "variables"))
+   if (length(response) != 1)
+       stop("Invalid formula: response (LHS) can have only 1 term.")
 
-    # Start parsing the formula string
-    args <- unlist(strsplit(f[3], split= "|", fixed=TRUE))
-    args <- gsub(" ","",args) # Delete all SiNGLE SPACES
+   interceptON <- TRUE
+   # Choice specific with generic coeffs
+   vars <- terms(f, lhs=0, rhs=1)
+   x <- attr(vars, "term.labels")
+   attr(call, "csvGenCoeff") <- if (length(x) > 0) x
+                                else NULL
+   interceptON <- (interceptON && attr(vars, "intercept"))
+   
+   # Individual specific vars
+   if (numRHS > 1) {
+       vars <- terms(f, lhs=0, rhs=2)
+       x <- attr(vars, "term.labels")
+       attr(call, "indSpVar") <- if (length(x) > 0) x
+                                 else NULL
+       interceptON <- (interceptON && attr(vars, "intercept"))
+   }
 
-    interceptON  <- TRUE
-    if (args[1] != "") { 
-        vars <- getTerms(paste(response, "~", args[1])) 
-        attr(call, "csvGenCoeff")  <- attr(vars, "covariates")
-        interceptON <- (interceptON && attr(vars, "intercept"))
-    } 
-    if (length(args) > 1 && args[2] != "") { 
-        vars <- getTerms(paste(response, "~", args[2])) 
-        attr(call, "indSpVar")  <- attr(vars, "covariates")
-        interceptON <- (interceptON && attr(vars, "intercept"))
-    } 
-    if (length(args) > 2 && args[3] != "") { 
-        vars <- getTerms(paste(response, "~", args[3])) 
-        attr(call, "csvChCoeff")  <- attr(vars, "covariates")
-        interceptON <- (interceptON && attr(vars, "intercept"))
-    } 
+   # Choice specific with choice specific coeffs
+   if (numRHS > 2) {
+       vars <- terms(f, lhs=0, rhs=3)
+       x <- attr(vars, "term.labels")
+       attr(call, "csvChCoeff") <- if (length(x) > 0) x
+                                   else NULL
+       interceptON <- (interceptON && attr(vars, "intercept"))
+   }
     attr(call, "Intercept") <- interceptON 
     attr(call, "response")  <- response 
     return(call)
-}
-
-getTerms <- function(formulaStr)
-{
-    fm <- as.formula(formulaStr)
-    Terms <- terms(fm)
-    attr(fm, "covariates") <- if (length(attr(Terms, "term.labels")))
-                                  attr(Terms, "term.labels") else NULL
-    attr(fm, "intercept") <- attr(Terms, "intercept")
-    return(fm)
 }

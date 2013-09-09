@@ -1,0 +1,214 @@
+
+R version 3.1.0 (2014-04-10) -- "Spring Dance"
+Copyright (C) 2014 The R Foundation for Statistical Computing
+Platform: x86_64-unknown-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ############################################################################
+> ### Sample code for results of Table 2 of the paper
+> ############################################################################
+> 
+> library(mnlogit)
+Package: mnlogit
+Version: 1.2.0
+Multinomial Logit Choice Models.
+Scientific Computing Group, Sentrana Inc.
+> library(mlogit)
+Loading required package: Formula
+Loading required package: maxLik
+Loading required package: miscTools
+
+Please cite the 'maxLik' package as:
+Henningsen, Arne and Toomet, Ott (2011). maxLik: A package for maximum likelihood estimation in R. Computational Statistics 26(3), 443-458. DOI 10.1007/s00180-010-0217-1.
+
+If you have questions, suggestions, or comments regarding the 'maxLik' package, please use a forum or 'tracker' at maxLik's R-Forge site:
+https://r-forge.r-project.org/projects/maxlik/
+
+Attaching package: ‘mlogit’
+
+The following objects are masked from ‘package:mnlogit’:
+
+    hmftest, scoretest
+
+> source("simChoiceModel.R") #  Has makeModel() to generate simulated data
+> 
+> # Type 'X' problems
+> numChoices <- 10
+> data <- makeModel('X', K=numChoices) # generate data 
+> # Default args set: p = 50 variables, N = K * p * 20 observations
+> 
+> # Make formula 
+> vars <- paste("X", 1:50, sep="", collapse=" + ")
+> fm <- formula(paste("response ~ 1|", vars, " - 1 | 1"))
+> 
+> # Run mnlogit
+> system.time(fit.mnlogit <- mnlogit(fm, data, "choices"))  # runs on 1 proc
+   user  system elapsed 
+  1.788   0.124   1.918 
+> 
+> # Run mlogit
+> mdat <- mlogit.data(data[order(data$indivID), ], "response", shape="long",
++     alt.var="choices")
+> system.time(fit.mlogit <- mlogit(fm, mdat))   # Newton-Raphson
+   user  system elapsed 
+ 36.106   5.576  41.815 
+> system.time(fit.mlogit <- mlogit(fm, mdat, method='bfgs'))
+   user  system elapsed 
+ 32.790   8.316  41.247 
+> 
+> # Type 'Y, 'Z' & 'YZ' problems
+> data <- makeModel('Y', K=numChoices)  # generate data 
+> # Default args set: p = 50 variables, N = K * p * 20 observations
+> 
+> # Make formula for type 'Y' problems 
+> vars <- paste("X", 1:50, sep="", collapse=" + ")
+> fm <- formula(paste("response ~ 1| - 1 | ", vars))
+> 
+> # Run mnlogit
+> system.time(fit.mnlogit <- mnlogit(fm, data, "choices"))  # runs on 1 proc
+   user  system elapsed 
+  2.692   0.004   2.701 
+> 
+> # Run mlogit
+> mdat <- mlogit.data(data[order(data$indivID), ], "response", shape="long",
++     alt.var="choices")
+> system.time(fit.mlogit <- mlogit(fm, mdat))   # Newton-Raphson
+   user  system elapsed 
+ 41.259   8.289  49.713 
+> system.time(fit.mlogit <- mlogit(fm, mdat, method='bfgs'))
+   user  system elapsed 
+ 36.714  11.469  48.362 
+> 
+> # Formula for type 'Z' problems
+> vars <- paste("X", 1:50, sep="", collapse=" + ")
+> fm <- formula(paste("response ~ ", vars, "| - 1 | 1"))
+> # Code for running mnlogit and mlogit is the same as for type 'X' & 'Z'
+> 
+> # Formula for type 'YZ' problems
+> # 5 variables of type 'Z' and 45 variables of type 'Y'
+> vars <- paste("X", 1:45, sep="", collapse=" + ")
+> fm <- formula(paste("response ~ X46 + X47 + X48 + X49 + X50| - 1 | ", vars))
+> # Code for running mnlogit and mlogit is the same as for type 'X' & 'Z'
+> 
+> ############################################################################
+> ### Sample code for results of Table 3 of the paper (parallel execution)
+> ############################################################################
+> 
+> library(mnlogit)
+> source('simChoiceModel.R')
+> 
+> # Type 'X' problems
+> numChoices <- 20
+> data <- makeModel('X', K=numChoices)  # generate data 
+> # Default args set: p = 50 variables, N = K * p * 20 observations
+> 
+> # Make formula 
+> vars <- paste("X", 1:50, sep="", collapse=" + ")
+> fm <- formula(paste("response ~ 1|", vars, " - 1 | 1"))
+> 
+> system.time(fit.mnlogit <- mnlogit(fm, data, "choices", ncores = 1)) 
+   user  system elapsed 
+  9.513   0.372   9.915 
+> system.time(fit.mnlogit <- mnlogit(fm, data, "choices", ncores = 2)) 
+   user  system elapsed 
+  9.889   0.220   6.624 
+> system.time(fit.mnlogit <- mnlogit(fm, data, "choices", ncores = 4)) 
+   user  system elapsed 
+ 12.016   0.216   5.396 
+> 
+> ############################################################################
+> ### Code from Appendix C of the paper 
+> ############################################################################
+> 
+> library(mnlogit)
+> source('simChoiceModel.R')
+> 
+> # Generate simulated data
+> data <- makeModel('X', K=5)
+> K = length(unique(data$choices))
+> N = nrow(data)/K
+> p = ncol(data) - 3
+> np = (K - 1) * p
+> cat(paste0("Number of choices in simulated data = K = ", K,
++     ".\nNumber of observations in si    mulated data = N = ", N,
++     ".\nNumber of variables = p = ", p,
++     ".\nNumber of model parameters = (K - 1) * p = ", (K-1)*p, "."))
+Number of choices in simulated data = K = 5.
+Number of observations in si    mulated data = N = 5000.
+Number of variables = p = 50.
+Number of model parameters = (K - 1) * p = 200.> 
+> # Make formula for mnlogit and mlogit
+> vars <- paste("X", 1:50, sep="", collapse=" + ")
+> fm <- formula(paste("response ~ 1|", vars, " - 1 | 1"))
+> 
+> # Run mnlogit
+> system.time(fit.mnlogit <- mnlogit(fm, data, "choices"))  # runs on 1 proc
+   user  system elapsed 
+  0.372   0.004   0.375 
+> 
+> # Run mlogit
+> library(mlogit) 
+> mdat <- mlogit.data(data[order(data$indivID), ], "response", shape="long",
++     alt.var="choices")
+> system.time(fit.mlogit <- mlogit(fm, mdat))   # Newton-Raphson
+   user  system elapsed 
+  3.513   0.000   3.521 
+> system.time(fit.mlogit <- mlogit(fm, mdat, method='bfgs'))
+   user  system elapsed 
+   3.46    0.00    3.47 
+> 
+> # Run nnet
+> library(nnet)
+> ndat <- data[which(data$response > 0), ]
+> ff <- paste("choices ~", vars, "- 1")   # formula for nnet
+> system.time(fit.nnet <- multinom(ff, ndat, reltol=1e-12))
+# weights:  255 (200 variable)
+initial  value 8047.189562 
+iter  10 value 7919.507809
+iter  20 value 7912.334074
+iter  30 value 7911.379450
+iter  40 value 7911.369167
+iter  50 value 7911.368461
+iter  60 value 7911.368451
+final  value 7911.368451 
+converged
+   user  system elapsed 
+  0.892   0.000   0.893 
+> 
+> # Run VGAM
+> library(VGAM)
+Loading required package: splines
+Loading required package: stats4
+
+Attaching package: ‘VGAM’
+
+The following objects are masked from ‘package:mlogit’:
+
+    lrtest, mlogit
+
+The following object is masked from ‘package:mnlogit’:
+
+    lrtest
+
+> stop.vglm <- vglm.control(epsilon = 1e-6)
+> system.time(fit.vglm <- vglm(ff, data=ndat, multinomial, control=stop.vglm))
+   user  system elapsed 
+  2.160   0.000   2.166 
+> #############################################################################
+> 
+> proc.time()
+   user  system elapsed 
+199.796  34.954 225.135 

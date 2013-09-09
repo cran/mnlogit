@@ -1,15 +1,15 @@
 Package: mnlogit
 Type: Package
 Title: Multinomial Logit Model
-Version: 1.1.1
-Date: 2013-3-14
-Suggests: mlogit, VGAM, nnet
-Author: Wang Zhiyu, Asad Hasan <asad.hasan@sentrana.com>
+Version: 1.2.0
+Date: 2013-9-9
+Suggests: VGAM, nnet
+Imports: mlogit, lmtest, Formula
+Author: Asad Hasan, Wang Zhiyu, Alireza S. Mahani 
 Maintainer: Asad Hasan <asad.hasan@sentrana.com>
-Depends: R (>= 2.10)
 Description: Time and memory efficient estimation of multinomial logit models using maximum likelihood method. Numerical optimization performed by Newton-Raphson method using an optimized, parallel C++ library to achieve fast computation of Hessian matrices. Motivated by large scale multiclass classification problems in econometrics and machine learning.
 License: GPL (>= 2)
-Packaged: 2014-04-10 12:58:23 UTC; ahasan
 NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2014-04-10 15:23:56
+Packaged: 2014-09-09 21:22:30 UTC; ahasan
+Date/Publication: 2014-09-10 00:22:51

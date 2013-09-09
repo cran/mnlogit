@@ -1,7 +1,28 @@
-Changes since version 1.0.0
-	
-	* Inserted include guards for all openMP commands.
+Changes since version 1.1.1
 
+	* Made choiceVar arg in mnlogit() optional when data is a mlogit.data obj.
+
+	* Added arg alt.subset in mnlogit() call to estimate on a subset of alternatives.
+
+	* Added arg start in mnlogit() call to accept an initial guess for coeffs.
+ 
+	* Added hypothesis tests - 3 MLE test and one test for IIA.   
+ 
+	* Added Several methods for mnlogit objects to match mlogit methods.
+	
+	* Residual calculation now matches mlogit.
+	
+	* The output of newtonRaphson() has been slightly changed for residual field.
+
+	* mnlogit() returns an object with slightly different fields, matching mlogit.
+
+	* formulaParser() now relies on the Formula package for manipulating formulas.
+
+	* Fixed a bug in newtonRaphson() related to failed linesearch situations.
+
+Changes since version 1.1.0
+
+	* Fixed a critical bug in calling compiled code with incorrect matrix args.
 
 Changes since version 1.0.1
 	
@@ -15,6 +36,7 @@ Changes since version 1.0.1
 
 	* Changed .C() with DUP=FALSE to .Call() to meet CRAN requirements.
 
-Changes since version 1.1.0
+Changes since version 1.0.0
+	
+	* Inserted include guards for all openMP commands.
 
-	* Fixed a critical bug in calling compiled code with incorrect matrix args.

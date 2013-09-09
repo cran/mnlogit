@@ -7,12 +7,15 @@
 #   obsFactor <- 15     # num obs = K * numCovars * obsFactor
 #   outfile   <- FALSE  # Whether to write data.frame object to a .rds file
 #   print.level <- 0    # Set to non-zero to print stuff
+#   seed        <- pi   # Value of random seed
 # Returns:
 #   data.frame in 'long' format such that data for a choice is together
 ############################################################################
 makeModel <-function(modelType, K=100, numCovars=50, obsFactor=20,
-                     outfile=FALSE, print.level=0) 
+                     outfile=FALSE, print.level=0, seed=pi) 
 {
+  set.seed(seed)
+
   # Automatic params
   stopifnot(sum(modelType == c('X', 'Y', 'Z')) > 0)
   N         <- numCovars*K*obsFactor   # num observations

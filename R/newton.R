@@ -1,5 +1,6 @@
 #############################################################################
 #     Optimizer implementing the Newton-Raphson Method (with linesearch)
+#############################################################################
 #
 # Args:
 #   reponse - vector giving the response (for training data) 
@@ -25,8 +26,8 @@
 #   print.level - increase from 0 to progressively print more running info
 #   coeff.names - names of coefficients, vector of length = nparams
 #   weights - vector specifying frequency weights 
-#   predict - if NOT NULL, then it must vecotr of coeff of length nparam
-#             and is used to compute predicted probability matrix
+#   start - vector of coefficients to use as initial guess
+#           NOTE: It's entirely upto caller to ensure correct order! 
 #
 # Output: 
 #  A list with various entries (see end of function) 
@@ -36,7 +37,7 @@
 #   loglikelihood is also implemented.
 #############################################################################
 newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol, 
-               ncores, print.level, coeff.names, weights=NULL, predict=NULL)
+               ncores, print.level, coeff.names, weights=NULL, start=NULL)
 {
     initTime <- proc.time()[3]
     # Determine problem parameters
@@ -52,16 +53,11 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
               "f" = f, 
               "d" = d, 
               "nparams" = nparams),
-              class = "model.size")
-    if (!is.null(predict)) {
-        if (length(predict) != size$nparams)
-            stop("Arg predict of incorrect length or not a vector.")
-        return(likelihood(response, X, Y, Z, size, predict, ncores,
-                          hess=FALSE, weights = weights, predict = TRUE))
-    }
+            class = "model.size")
 
     # Initialize 'guess' for NR iteration
-    coeffVec <- rep(0, size$nparams)
+    coeffVec <- if (!is.null(start)) start
+                else rep(0, size$nparams)
     funcTime <- gradTime <- hessTime <- lineSearch <- solveTime <- 0.0
     # Compute log-likelihood, gradient, Hessian at initial guess
     fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
@@ -75,7 +71,16 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
     lineSearchIters <- 0
     failed.linesearch <- FALSE
     stop.code <- "null"
-    
+     
+   # If we just wish to compute the Hessian, gradient & loglikelihood 
+    if (maxiter < 1) {     
+        probMat <- attr(fEval, "probMat")
+        probMat <- cbind(1 - rowSums(probMat), probMat)
+        residMat <- matrix(c(1:size$K), nrow=1, ncol=size$K)
+        return(list(coeff=coeffVec, loglikelihood=loglik, grad=gradient,
+           hessMat=hessian, probability=probMat, residual=residMat,
+           model.size=size, est.stats=NULL))
+    }
     # Newton-Raphson Iterations
     for (iternum in 1:maxiter) {
         oldLogLik <- loglik
@@ -90,7 +95,7 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
 
         if (print.level) {
           cat("====================================================")
-          cat(paste0("\nNewton Raphson iteration # ", iternum))
+          cat(paste0("\nAt start of Newton-Raphson iter # ", iternum))
           cat(paste0("\n  loglikelihood = ", round(loglik, 8)))
           cat(paste0("\n  gradient norm = ", round(gradNorm, 8)))
           cat("\n  Approx Hessian condition number = ")
@@ -125,7 +130,6 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
             else alpha <- alpha/2.0
             if (max(abs(alpha * dir)) < 1e-15)  { 
               failed.linesearch <- TRUE
-              print(paste("alpha, max(alpha * dir) = ", alpha, max(abs(alpha*dir))))
               break
             }
         } 
@@ -133,18 +137,15 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
         lineSearchIters <- lineSearchIters + niter
         lineSearch <- lineSearch + t2 - t1
 
-        # if linesearch succeeds we moved along Newton direction
         # Compute new log-likelihood, gradient, Hessian
-        if (!failed.linesearch) {   
-            fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
+        fEval <- likelihood(response, X, Y, Z, size, coeffVec, ncores,
                             weights = weights, loglikObj = newloglik)
-            funcTime <- funcTime + attr(fEval, "funcTime")
-            gradTime <- gradTime + attr(fEval, "gradTime")
-            hessTime <- hessTime + attr(fEval, "hessTime")
-            loglik <- fEval[[1]]
-            gradient <- attr(fEval, "gradient")
-            hessian <- attr(fEval, "hessian")
-        } 
+        funcTime <- funcTime + attr(fEval, "funcTime")
+        gradTime <- gradTime + attr(fEval, "gradTime")
+        hessTime <- hessTime + attr(fEval, "hessTime")
+        loglik <- fEval[[1]]
+        gradient <- attr(fEval, "gradient")
+        hessian <- attr(fEval, "hessian")
 
         # Success Criteria: function values converge
         loglikDiff <- abs(loglik - oldLogLik)    
@@ -161,6 +162,10 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
         # Success criterion not met, yet linesearch failed 
         if (failed.linesearch) {
           stop.code <- paste0("Newton-Raphson Linesearch failed, can't do better")
+          if (print.level) {
+              print(paste("Failed linesearch: alpha, max(alpha * dir) = ", 
+                           alpha, max(abs(alpha*dir))))
+          }
           break
         }
     }  # end Newton-Raphson loop
@@ -183,20 +188,23 @@ newtonRaphson <- function(response, X, Y, Z, K, maxiter, gtol, ftol,
                ncores = ncores
             ), class = "est.stats")
 
-    # Residual - probability of NOT making the choice that was really made
     responseMat <- matrix(response, nrow=size$N, ncol=(size$K-1))
-    baseResp <- rep(1, size$N) - rowSums(responseMat)
-    probMat <- attr(fEval, "probMat")
+    responseMat <- cbind(rep(1, size$N) - rowSums(responseMat), responseMat)
+    probMat     <- attr(fEval, "probMat")
     baseProbVec <- 1 - rowSums(probMat)
+    probMat     <- cbind(baseProbVec, probMat)
+    
     # Pch - prob of choice that was actually made
-    Pch <- matrix(c(as.vector(ifelse(baseResp > 0, baseProbVec, NA)),
-                    as.vector(ifelse(responseMat > 0, probMat, NA))),
-                    nrow = size$K, ncol = size$N, byrow=TRUE)
+    Pch <- matrix(c(as.vector(ifelse(responseMat > 0, probMat, NA))),
+                   nrow = size$K, ncol = size$N, byrow=TRUE)
     Pch <- Pch[!is.na(Pch)]
-    Pch <- 1 - Pch   # the residual (oen for each observation) 
+      
+    residMat <- responseMat - Pch # residual computation
+    # Probability of NOT making the choice that was really made
+    attr(residMat, "outcome") <- 1 - Pch     # residual for selected choice
 
     result <- list(coeff = coeffVec, loglikelihood = loglik, grad  = gradient,
-                   hessMat = hessian, probability = probMat, residual = Pch,
+                   hessMat = hessian, probability=probMat, residual = residMat,
                    model.size = size, est.stats = stats)
     return (result)
 }

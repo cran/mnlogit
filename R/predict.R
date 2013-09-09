@@ -1,11 +1,14 @@
-# predict method for mnlogit objects
-# Contributed by: Florian Oswald, Univeristy College London
-predict.mnlogit <- function(object, newdata=NULL, probability=FALSE, ...) 
+##########################################################################
+## predict method for mnlogit objects                                    #
+## Contributed by: Florian Oswald, University College London             #
+## Homepage: http://floswald.github.io					 #
+##########################################################################
+predict.mnlogit <- function(object, newdata=NULL, probability=TRUE,
+                            returnData = FALSE, choiceVar=NULL, ...) 
 {
     size     <- object$model.size
     # get choice set for colnames
-    choiceVar <- object$call$choiceVar
-    choiceSet <- unique(object$data[[choiceVar]])
+    choiceSet <- unique(index(object))
 
     if (is.null(newdata)) {
         # if no new data, use probabilities computed during training model
@@ -19,24 +22,28 @@ predict.mnlogit <- function(object, newdata=NULL, probability=FALSE, ...)
         # check that all columns from data are present
         # this is important when you build Y below.
 	newn <- names(newdata)
-	oldn <- names(object$data)
+	oldn <- names(object$model)
 
 	if (!all(oldn %in% newn))
 	    stop("newdata must have same columns as training data. ")
 
 	# make sure newdata is ordered by choice
+        if (is.null(choiceVar)) {
+            choiceVar <- "_Alt_Indx_"
+            newdata[[choiceVar]] <- index(object)$alt
+        }
 	newdata <- newdata[order(newdata[[choiceVar]]), ]
 
 	# different model size: N # newdata must have N*K rows
 	if (nrow(newdata) %% size$K)
-	  stop("Mismatch between number of rows in newdata and number of choices.")
+	  stop("Mismatch between nrows in newdata and number of choices.")
     }
 
     data <- newdata
     size$N <- nrow(data)/size$K       # number of individuals
     
     # Initialize utility matrix: dim(U) = N x K-1
-    probMat <- matrix(rep(0, size$N * (size$K-1)), nrow = size$N, ncol = size$K-1)
+    probMat <- matrix(rep(0, size$N * (size$K-1)), nrow=size$N, ncol=size$K-1)
 
     formDesignMat <- function(varVec = NULL, includeIntercept = TRUE)
     {
@@ -49,7 +56,7 @@ predict.mnlogit <- function(object, newdata=NULL, probability=FALSE, ...)
         modMat <- model.matrix(as.formula(fm), data)
     }
     # Grab the parsed formula from the fitted mnlogit object 
-    formula  <- object$formula
+    formula  <- parseFormula(object$formula)
     X <- formDesignMat(varVec = attr(formula, "indSpVar"), 
                        includeIntercept = attr(formula, "Intercept"))
     X <- if (!is.null(X)) X[1:size$N, , drop=FALSE]   # Matrix of ind sp vars
@@ -111,11 +118,13 @@ predict.mnlogit <- function(object, newdata=NULL, probability=FALSE, ...)
 	 	
     colnames(probMat) <- choiceSet
 
-    if (probability)
+    if (probability) {
+         if (returnData) attr(probMat, "data") <- newdata
 	return(probMat)
-    else {
+    } else {
 	choice <- apply(probMat, 1, function(x)
 			object$choices[which(x == max(x, na.rm = TRUE))])
+        if (returnData) attr(choice, "data") <- newdata
 	return(choice)
     }
 }

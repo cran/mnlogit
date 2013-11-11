@@ -2,14 +2,17 @@
 * Parallelized implementation of Hessian computation for multinomial logit
 * loglikelihood functions.
 *
-* Version: 1.0
+* Version: 1.0.1
 */
 #include<R.h>
 #include<R_ext/Print.h>
 #include<R_ext/BLAS.h>
 #include<stdlib.h>
 #include<string.h>
+
+#ifdef SUPPORT_OPENMP
 #include<omp.h>
+#endif
 
 extern "C" {
 

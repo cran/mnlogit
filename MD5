@@ -1,4 +1,4 @@
-810b5e3c59c1a03bd1a2ca630cf7163e *DESCRIPTION
+6d222c3b23df8e241b4cf831ea155e91 *DESCRIPTION
 15aca9ceaafdb30766bdd359aa0059a3 *NAMESPACE
 d0801052ce8e459e39e79176fbeb49bc *R/formula.R
 ea3a85b3fe4379c3665ebb6026eea28b *R/likelihood.R
@@ -10,12 +10,12 @@ cdeb1a22ff77072817695bfb2e24d3a0 *R/zzz.R
 89005827c37735ac20e2a19da1cd57f8 *data/Fish.rda
 7b781bea13ad15dbbdc5d1c0d54c9ec7 *inst/doc/mnlogit.R
 74de3be94cc4e82a11fda90f976cd286 *inst/doc/mnlogit.Rnw
-e0671e839f01756d8e8f55852702ac1f *inst/doc/mnlogit.pdf
+3f7d44db00af3f2bf017babb04e730e5 *inst/doc/mnlogit.pdf
 36fd9f74fcdb1d536aa3c6231b552c02 *man/Fish.Rd
 6585b5f9074871000118a8824ac8881e *man/mnlogit.Rd
 73237c82818d44e4871663f6135a5bf6 *src/Makevars
-89bcf5652e6343695577f1bbab4b6f74 *src/hessian.cc
-02734c6848ea2d2d9ad956c39c1a6117 *src/hessian.h
+bf16408105fe4b51efdb386c235d8ac4 *src/hessian.cc
+ae16774d7556272fb000294061e30cf0 *src/hessian.h
 cfe66d7a0d2c4503a480f9d7fe416ece *vignettes/images/HessSpeedups.pdf
 74de3be94cc4e82a11fda90f976cd286 *vignettes/mnlogit.Rnw
 98ae45b2f85a13446171dc35435a63d2 *vignettes/mnlogit.bib

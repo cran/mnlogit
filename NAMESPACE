@@ -1,0 +1,16 @@
+useDynLib(mnlogit)
+useDynLib(mnlogit, "computeHessian")
+export("mnlogit")
+
+# mnlogit methods
+S3method("print", "mnlogit")
+S3method("predict", "mnlogit")
+S3method("summary", "mnlogit")
+
+S3method("coef", "mnlogit")
+S3method("residuals", "mnlogit")
+S3method("vcov", "mnlogit")
+S3method("logLik", "mnlogit")
+S3method("print", "est.stats")
+S3method("print", "model.size")
+S3method("print", "summary.mnlogit")

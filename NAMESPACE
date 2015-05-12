@@ -14,6 +14,7 @@ importFrom("lmtest", "waldtest.default")
 ######################################################################
 useDynLib(mnlogit, "computeHessianDotCall")
 export("mnlogit", "lrtest", "waldtest", "scoretest", "hmftest")
+export("index")
 
 ######################################################################
 ## mnlogit methods

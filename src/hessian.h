@@ -37,8 +37,6 @@ void printMatrix(const char* msg, double* arr, int rows, int cols);
 
 /*
 * Computes: prod[i] = v[i] * u[i]  (0 <= i < len)
-* Uses BLAS level 2 call: dsbmv
-* Treats 'v' as a diagonal matrix (doesn't require extra storage).
 */
 void termwiseMult(double* v, double* u, double* prod, int len);
 

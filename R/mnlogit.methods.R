@@ -77,18 +77,25 @@ update.mnlogit <- function (object, new, ...){
 
 # Print function
 print.mnlogit <- function(x, digits = max(3, getOption("digits") - 2),
-                          width = getOption("width"), ...)
+                          width = getOption("width"), 
+                          what = c("obj", "eststat", "modsize"), ...)
 {
-   
-    cat("\nCall:\n", deparse(x$call), "\n\n", sep = "")
-    if (length(coef(x))){
-        cat("Coefficients:\n")
-        print.default(format(coef(x, order=TRUE), digits=digits), print.gap=2,
-                      quote = FALSE) 
+    what <- match.arg(what)
+    if (what == "eststat") {
+        print.est.stats(x$est.stat, ...)
+    } else if (what == "modsize") {
+        print.model.size(x$model.size, ...)
+    } else {
+      cat("\nCall:\n", deparse(x$call), "\n\n", sep = "")
+      if (length(coef(x))){
+          cat("Coefficients:\n")
+          print.default(format(coef(x, order=TRUE), digits=digits),
+                        print.gap=2, quote = FALSE)
+      }
+      else cat("No coefficients\n")
+      cat("\n")
+      invisible(x)
     }
-    else cat("No coefficients\n")
-    cat("\n")
-    invisible(x)
 }
 
 # Extract the covariance matrix of the mnlogit object
@@ -142,6 +149,11 @@ print.summary.mnlogit <- function(x, digits = max(3, getOption("digits") -2),
     cat("\n")
 }
 
+index <- function(object, ...) 
+{
+    UseMethod("index", object)
+}
+
 index.mnlogit <- function(object, ...)
 {
     return(attr(object$model, "index"))
@@ -188,12 +200,12 @@ print.est.stats <- function(x, ...)
 # Print model parameters
 print.model.size <- function(x, ...)
 {
-    cat(paste0("Number of observations in training data = ", x$N))
+    cat(paste0("Number of observations in data = ", x$N))
     cat(paste0("\nNumber of alternatives = ", x$K))
     if (x$intercept) cat("\nIntercept turned: ON")
     else cat("\nIntercept turned: OFF")
     cat(paste0("\nNumber of parameters in model = ", x$nparams))
     cat(paste0("\n  # individual specific variables = ", x$p))
     cat(paste0("\n  # choice specific coeff variables = ", x$f))
-    cat(paste0("\n  # generic coeff variables = ", x$d, "\n"))
+    cat(paste0("\n  # individual independent variables = ", x$d, "\n"))
 }

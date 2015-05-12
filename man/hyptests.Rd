@@ -55,7 +55,6 @@ Code for the last two tests (Score and IIA test) is gratefully adapted from the 
    Achim Zeileis, Torsten Hothorn (2002)
    \emph{Diagnostic Checking in Regression Relationships},
    R News 2(3), 7-10. \url{http://CRAN.R-project.org/doc/Rnews/}.
-   \url{ }
 }
 
 \author{Asad Hasan, Wang Zhiyu, Alireza S. Mahani}

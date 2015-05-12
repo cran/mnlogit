@@ -85,7 +85,7 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     }
 
     # Determine relevant parameters
-    choice.set <- unique(data[[choiceVar]])
+    choice.set <- unique(data[[choiceVar]]) # reordered when data is sorted
     K <- length(choice.set) # number of choices
     if (nrow(data) %% K)
         stop("Mismatch between number of rows in data and number of choices.")
@@ -130,9 +130,12 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     # Rearrange the input data.frame object
     # Sort according to choices: data for an atlernative should be contiguous
     data <- data[order(data[[choiceVar]]), ]
+    choice.set <- unique(data[[choiceVar]])
 
     # Obtain response vector as a vector of 0,1
-    respVec <- as.numeric(data[[attr(formula, "response")]])
+    respVec <- data[[attr(formula, "response")]]
+    if (is.factor(respVec)) respVec <- droplevels(respVec)
+    respVec <- as.numeric(respVec)
     min.respVec <- min(respVec)
     spread <- max(respVec) - min.respVec
     if (spread != 1) {

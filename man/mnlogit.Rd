@@ -10,6 +10,7 @@
 \alias{logLik.mnlogit}
 \alias{summary.mnlogit}
 \alias{print.summary.mnlogit}
+\alias{index}
 \alias{index.mnlogit}
 \alias{predict.mnlogit}
 \alias{coef.mnlogit}
@@ -34,7 +35,8 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
 \method{terms}{mnlogit}(x, ...)
 \method{update}{mnlogit}(object, new, ...)
 \method{print}{mnlogit}(x, digits = max(3, getOption("digits") - 2),
-                        width = getOption("width"), ... )
+                        width = getOption("width"), 
+                        what = c("obj", "eststat", "modsize"), ...)
 \method{vcov}{mnlogit}(object, ...)
 \method{logLik}{mnlogit}(object, ...)
 \method{summary}{mnlogit}(object, ...)
@@ -65,6 +67,7 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     \item{new}{An \code{formula} for the \code{update} method. It must obey all rules specified for the \code{formula} argument.}
     \item{digits}{Number of digits to print.}
     \item{width}{The width of printing.}
+    \item{what}{Specifies what to print. Default option is 'obj' is the print function for mnlogit objects. Option 'eststat' prints etimation stats and option 'mdsize' prints model size information.}
     \item{probability}{If TRUE predict output the probability matrix, otherwise the chocice with the highest probability for each observation is returned.}
     \item{returnData}{If \code{TRUE} a data attribute is added to the returned object.}
     \item{order}{If \code{TRUE} coefficients are ordered by variable name.}
@@ -127,8 +130,8 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
    summary(fit)
    print(fit)
    predict(fit)
-   print(fit$est.stats)
-   print(fit$model.size)
+   print(fit, what = "eststat")
+   print(fit, what = "modsize")
   
    # Formula examples (see also Note)
    fm <- formula(mode ~ 1 | income)    # Only type-2 with intercept

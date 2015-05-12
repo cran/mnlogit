@@ -8,7 +8,7 @@ predict.mnlogit <- function(object, newdata=NULL, probability=TRUE,
 {
     size     <- object$model.size
     # get choice set for colnames
-    choiceSet <- unique(index(object))
+    choiceSet <- unique(index(object)$alt)
 
     if (is.null(newdata)) {
         # if no new data, use probabilities computed during training model
@@ -19,20 +19,22 @@ predict.mnlogit <- function(object, newdata=NULL, probability=TRUE,
 			object$choices[which(x == max(x, na.rm = TRUE))]))
         }
     } else {
+	# make sure newdata is ordered by choice
+        if (is.null(choiceVar)) {
+          if (!any(class(newdata) == "mlogit.data"))
+            stop("NULL choiceVar requires newdata to be a mlogit.data object")
+          choiceVar <- "_Alt_Indx_"
+          newdata[[choiceVar]] <- attr(newdata, "index")$alt
+          #newdata[[choiceVar]] <- index(object)$alt
+        }
+	newdata <- newdata[order(newdata[[choiceVar]]), ]
+
         # check that all columns from data are present
         # this is important when you build Y below.
 	newn <- names(newdata)
 	oldn <- names(object$model)
-
 	if (!all(oldn %in% newn))
 	    stop("newdata must have same columns as training data. ")
-
-	# make sure newdata is ordered by choice
-        if (is.null(choiceVar)) {
-            choiceVar <- "_Alt_Indx_"
-            newdata[[choiceVar]] <- index(object)$alt
-        }
-	newdata <- newdata[order(newdata[[choiceVar]]), ]
 
 	# different model size: N # newdata must have N*K rows
 	if (nrow(newdata) %% size$K)

@@ -1,8 +1,8 @@
 Package: mnlogit
 Type: Package
 Title: Multinomial Logit Model
-Version: 1.2.0
-Date: 2013-9-9
+Version: 1.2.1
+Date: 2015-5-12
 Suggests: VGAM, nnet
 Imports: mlogit, lmtest, Formula
 Author: Asad Hasan, Wang Zhiyu, Alireza S. Mahani 
@@ -11,5 +11,5 @@ Description: Time and memory efficient estimation of multinomial logit models us
 License: GPL (>= 2)
 NeedsCompilation: yes
 Repository: CRAN
-Packaged: 2014-09-09 21:22:30 UTC; ahasan
-Date/Publication: 2014-09-10 00:22:51
+Packaged: 2015-05-13 03:57:49 UTC; ahasan
+Date/Publication: 2015-05-13 08:49:52

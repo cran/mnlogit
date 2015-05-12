@@ -1,3 +1,21 @@
+Changes since version 1.2.0
+	
+	* Fixed a bug in predict(). Thanks to Frank Zhe Wang of UNC for reporting.
+
+	* Fixed a bug in predict() for handling choiceVar arg. 
+
+	* Fixed a bug in mnlogit.R in getting correct order of names for choices. Thanks to Matthew Levinson for reporting.
+
+	* Added droplevels() when converting response col to T/F in mnlogit.R
+
+	* Added UseMethod() to allow index() to be called on mnlogit objects
+
+	* Added argument 'what' in print.mnlogit()
+
+	* Slightly changed wording of output in print.model.size 
+
+	* Minor correction in comments in file mnlogit/src/hessian.h
+
 Changes since version 1.1.1
 
 	* Made choiceVar arg in mnlogit() optional when data is a mlogit.data obj.

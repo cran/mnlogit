@@ -108,7 +108,7 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
 \references{
   Croissant, Yves. 
     \emph{Estimation of multinomial logit models in R: The mlogit Packages.}
-    \url{http://cran.r-project.org/web/packages/mlogit/index.html}
+    \url{http://cran.r-project.org/package=mlogit}
 
   Train, K. (2004) \emph{Discrete Choice Methods with Simulation},
   Cambridge University Press.

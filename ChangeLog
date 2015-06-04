@@ -1,3 +1,7 @@
+Changes since version 1.2.1
+	
+	* Made a change in mnlogit.R return field est.stat so that pre-processing time is returned.
+
 Changes since version 1.2.0
 	
 	* Fixed a bug in predict(). Thanks to Frank Zhe Wang of UNC for reporting.

@@ -1,10 +1,10 @@
-85ea9408b0d9e41216cfa9fe9d31ff61 *ChangeLog
-a6332da8e4cc9c1edb27382faffb1395 *DESCRIPTION
+bacdd49a360629bdaa0298d833095c2b *ChangeLog
+5698e8b0a6e80ee2ecfb071cd0991479 *DESCRIPTION
 ec30bdfacd3d781171feae94e0c30d05 *NAMESPACE
 6ff3c2f3bcf3e30097cd3525ea10e056 *R/formula.R
 f12e64811579f0c041ce00a5439893fa *R/hyptests.R
 fa973ad1ac2b719938a800e49594883c *R/likelihood.R
-1f58a989d226d9c4451f47d90a260575 *R/mnlogit.R
+79491e5e51af164982870c24386f061f *R/mnlogit.R
 fcab505fe8f9cfe7877cb052ace1a28c *R/mnlogit.methods.R
 fb6d23d851491c745878cca58a7fdf12 *R/newton.R
 b0c45723d8a57cec655177859875705e *R/predict.R
@@ -15,8 +15,8 @@ c2f8e7a7e5afaca68cfd01ab6b4da864 *R/zzz.R
 98cf0eebffc7391cbec924cc6644fa7a *inst/doc/mnlogit.Rnw
 3372c295ccf438c3d02e913ad370c7ea *inst/doc/mnlogit.pdf
 36fd9f74fcdb1d536aa3c6231b552c02 *man/Fish.Rd
-82d9fc20fbc399ad14520c7a4b7f4996 *man/hyptests.Rd
-031604bdead36d6845bedfedf2fec427 *man/mnlogit.Rd
+8fd17f563d28e89e64380a172a64447d *man/hyptests.Rd
+c59187c9f8e8809881e5c7561018dbc9 *man/mnlogit.Rd
 73237c82818d44e4871663f6135a5bf6 *src/Makevars
 2e7c0fdc615c73d4f2086f949b3551b1 *src/hessian.cc
 2111f70fcb67cea20248cea99a768c7c *src/hessian.h

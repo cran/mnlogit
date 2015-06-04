@@ -235,14 +235,16 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     t1 <- proc.time()[3]    # Time at end of pre-processing
 
     gc()  # Invoke garbage collector at end of pre-processing 
+    prep.time <- t1 - startTime
     if (print.level > 1) {
       cat(paste0("Base alternative is: ", baseChoiceName))
       cat(paste0("\nPreprocessing data for estimation took ", 
-                  round(t1 - startTime, 3), " sec.\n"))
+                  round(prep.time, 3), " sec.\n"))
     } 
     # Solve MLE using Newton-Raphson
     result <- newtonRaphson(respVec, X, Y, Z, K, maxiter, gtol, ftol, ncores,
                   print.level, coeffNames, weights=weights, start=start)
+    result$est.stats$prepTimeSecs <- prep.time
     # Post-processing
     colnames(result$hessMat) <- coeffNames 
     rownames(result$hessMat) <- coeffNames

@@ -266,14 +266,16 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     colnames(result$probability) <- choice.set
     if (maxiter > 0) colnames(result$residual)    <- choice.set
 
-    AIC <- 2*(result$model.size$nparams - log(abs(result$loglikelihood)))
     result$model.size$intercept <- interceptOn
-    
     attributes(formula) <- NULL
+   
+    # Loglikelihood and AIC  
     logLik <- structure(-result$loglikelihood,
                         df = result$model.size$nparams,    
                         class = "logLik"
                        )
+    AIC <- 2*(result$model.size$nparams + result$loglikelihood)
+
     # 'index' attribute for data
     index <- data.frame(chid = rep(1:result$model.size$N, result$model.size$K),
                         alt = data[[choiceVar]])

@@ -1,4 +1,12 @@
+Changes since version 1.2.2
+
+	* Fixed a bug in AIC calculation
+	
+	* Fixed a requirement in predict for newdata to have response column
+
 Changes since version 1.2.1
+	
+	* Made a change in mnlogit.R return field est.stat so that pre-processing time is returned.
 	
 	* Made a change in mnlogit.R return field est.stat so that pre-processing time is returned.
 

@@ -2,6 +2,7 @@
 ## Imports
 ######################################################################
 import("Formula")
+import("stats")
 importFrom("mlogit", "mlogit.data")
 importFrom("mlogit", "index")
 importFrom("lmtest", "lrtest")

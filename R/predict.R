@@ -23,16 +23,22 @@ predict.mnlogit <- function(object, newdata=NULL, probability=TRUE,
         if (is.null(choiceVar)) {
           if (!any(class(newdata) == "mlogit.data"))
             stop("NULL choiceVar requires newdata to be a mlogit.data object")
+          if (nrow(newdata) != nrow(attr(newdata, "index")))
+            stop("mlogit.data object newdata has incorrect index attribute")
           choiceVar <- "_Alt_Indx_"
           newdata[[choiceVar]] <- attr(newdata, "index")$alt
           #newdata[[choiceVar]] <- index(object)$alt
         }
 	newdata <- newdata[order(newdata[[choiceVar]]), ]
 
-        # check that all columns from data are present
+	# Get name of response column
+	pf <- parseFormula(object$formula)
+	resp.col <- attr(pf, "response")
+
+        # check that all columns from data are present (except response col)
         # this is important when you build Y below.
 	newn <- names(newdata)
-	oldn <- names(object$model)
+	oldn <- setdiff(names(object$model), resp.col)
 	if (!all(oldn %in% newn))
 	    stop("newdata must have same columns as training data. ")
 
@@ -40,10 +46,11 @@ predict.mnlogit <- function(object, newdata=NULL, probability=TRUE,
 	if (nrow(newdata) %% size$K)
 	  stop("Mismatch between nrows in newdata and number of choices.")
     }
-
     data <- newdata
     size$N <- nrow(data)/size$K       # number of individuals
-    
+    if (!(resp.col %in% names(data))) # attach a response column 
+        data[[resp.col]] <- rep(1, size$N)
+
     # Initialize utility matrix: dim(U) = N x K-1
     probMat <- matrix(rep(0, size$N * (size$K-1)), nrow=size$N, ncol=size$K-1)
 

@@ -1,3 +1,9 @@
+Changes since version 1.2.3
+
+	* Fixed a bug in likelihood calculation when 'weights' isn't NULL. Thanks to Fan Yang of U Chicago for reporting.
+	
+	* Weights are now normalized such that their sum equal num obs.
+
 Changes since version 1.2.2
 
 	* Fixed a bug in AIC calculation

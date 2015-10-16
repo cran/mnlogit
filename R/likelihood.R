@@ -78,7 +78,7 @@ likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE,
         loglik <- if (is.null(weights))
                       -1*(loglik + sum(log(baseProbVec)))
                   else
-                      -1*(loglik + weights %*% baseProbVec)  
+                      -1*(loglik + weights %*% log(baseProbVec))  
 
     } else {
         loglik <- loglikObj
@@ -133,7 +133,8 @@ likelihood <- function(response, X, Y, Z, size, coeffVec, ncores, hess=TRUE,
             if (is.null(X)) NULL else as.double(t(X)), 
             if (is.null(Y)) NULL else as.double(t(Y)), 
             if (is.null(Z)) NULL else as.double(Z),
-            weights, probMat, baseProbVec, as.integer(ncores), hessMat)
+            if (is.null(weights)) NULL else as.double(weights),
+            probMat, baseProbVec, as.integer(ncores), hessMat)
        hessMat
     } else NULL
     t3 <- proc.time()[3]  # Time after Hessian evaluation

@@ -96,6 +96,8 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
       stop("Length of 'weights' arg must match number of observations in data.")
     if (!is.null(weights) && !all(weights > 0))
       stop("All entries in 'weights' must be strictly positive.")      
+    # Normalize weights
+    if (!is.null(weights)) weights <- weights * N / sum(weights)    
 
     # Work with only the columns appearing in formula
     data <- data[c(varNames, choiceVar)]

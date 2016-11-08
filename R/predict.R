@@ -80,8 +80,8 @@ predict.mnlogit <- function(object, newdata=NULL, probability=TRUE,
     if(!is.null(Z)) { 
         for (ch_k in 2:size$K) {
             Z[((ch_k - 1)*size$N + 1):(ch_k*size$N), ] <-
-              Z[((ch_k-1)*size$N+1):(ch_k*size$N), , drop=FALSE] 
-                  - Z[1:size$N, , drop=FALSE]
+              Z[((ch_k-1)*size$N+1):(ch_k*size$N), , drop=FALSE] - 
+	      Z[1:size$N, , drop=FALSE]
         }
     }
     # Drop rows for base alternative

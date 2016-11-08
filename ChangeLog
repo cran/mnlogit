@@ -1,3 +1,11 @@
+Changes since version 1.2.4
+	
+	* Fixed a bug in predict.R, thanks to John Eric Humphries of U Chicago for the catch.
+
+	* Replaced OpenMP C++ compiler check from the deprecated SUPPORT_OPENMP to _OPENMP
+
+	* Included CITATION file to reflect JSS paper.
+
 Changes since version 1.2.3
 
 	* Fixed a bug in likelihood calculation when 'weights' isn't NULL. Thanks to Fan Yang of U Chicago for reporting.

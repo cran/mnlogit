@@ -12,7 +12,7 @@
 #include <string.h>
 #include <math.h>
 
-#ifdef SUPPORT_OPENMP
+#ifdef _OPENMP
 #include <omp.h>
 #endif
 

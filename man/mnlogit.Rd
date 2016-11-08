@@ -106,11 +106,13 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
 }
 
 \references{
+  Asad Hasan, Zhiyu Wang, Alireza S. Mahani (2016).Fast Estimation of Multinomial Logit Models: R Package mnlogit. Journal of Statistical Software, 75(3), 1-24. doi:10.18637/jss.v075.i03
+ 
   Croissant, Yves. 
-    \emph{Estimation of multinomial logit models in R: The mlogit Packages.}
-    \url{http://cran.r-project.org/package=mlogit}
+    Estimation of multinomial logit models in R: The mlogit Packages.
+    \url{https://cran.r-project.org/package=mlogit}
 
-  Train, K. (2004) \emph{Discrete Choice Methods with Simulation},
+  Train, K. (2004). Discrete Choice Methods with Simulation,
   Cambridge University Press.
 }
 

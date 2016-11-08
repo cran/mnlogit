@@ -52,12 +52,12 @@ void computeNonGenHess(const size& sz, double* X, double* Y, double* wt,
    
     bool both = (sz.p > 0) && (sz.f > 0); 
     int nblocks = ((sz.p) ? (sz.K - 1) : 0) + ((sz.f) ? sz.K : 0);
-    #ifdef SUPPORT_OPENMP
+    #ifdef _OPENMP
     #pragma omp parallel for num_threads(ncores) schedule(dynamic)
     #endif
     for (int ii=0; ii < nblocks; ++ii) {
         int threadID = 0;
-        #ifdef SUPPORT_OPENMP
+        #ifdef _OPENMP
         // Grab workspace array for this thread
         threadID = omp_get_thread_num();
         #endif
@@ -171,12 +171,12 @@ void computeGenHessCorner(const size& sz, double* Z, double* wt, double* probMat
     double* hess = new double[sz.d * sz.d];
     double* mat = new double[sz.N * sz.d];
     ncores = (sz.d >= ncores) ? ncores : sz.d; // limit num_threads to sz.d
-    #ifdef SUPPORT_OPENMP
+    #ifdef _OPENMP
     #pragma omp parallel for num_threads(ncores) 
     #endif 
     for (int ii=0; ii < sz.d; ++ii) {
         int threadID = 0;
-        #ifdef SUPPORT_OPENMP
+        #ifdef _OPENMP
         // Grab workspace array for this thread
         threadID = omp_get_thread_num();
         #endif
@@ -204,7 +204,7 @@ void computeGenHessCorner(const size& sz, double* Z, double* wt, double* probMat
     if (wt) {
         // Perform mat = sqrt(W) * mat
         // NOTE: sqrt is taken because we need: mat^T * W * mat
-        #ifdef SUPPORT_OPENMP
+        #ifdef _OPENMP
         #pragma omp parallel for num_threads(ncores) 
         #endif 
         for (int j=0; j < sz.d; ++j) {
@@ -278,12 +278,12 @@ void computeGenHess(const size& sz, double* X, double* Y, double* Z, double* wt,
     
     bool both = (sz.p > 0) && (sz.f > 0); 
     int nblocks = ((sz.p) ? (sz.K - 1) : 0) + ((sz.f) ? sz.K : 0);
-    #ifdef SUPPORT_OPENMP
+    #ifdef _OPENMP
     #pragma omp parallel for num_threads(ncores) schedule(dynamic)
     #endif
     for (int ii=0; ii < nblocks; ++ii) {
         int threadID = 0;
-        #ifdef SUPPORT_OPENMP
+        #ifdef _OPENMP
         // Grab workspace array for this thread
         threadID = omp_get_thread_num();
         #endif
@@ -413,7 +413,7 @@ void computeHessian(int* Np, int* Kp, int* pp, int* fp, int* dp, int* hasWt,
     double* wt = NULL;
     if (*hasWt) wt = weight;
     int ncores = *ncoresp;
-    #ifndef SUPPORT_OPENMP
+    #ifndef _OPENMP
     if (ncores > 1) {
         ncores = 1;
         warning("OpenMP support not available for C++ compiler used with R.");

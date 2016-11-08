@@ -1,0 +1,25 @@
+bibentry(bibtype = "Article",
+  title        = "Fast Estimation of Multinomial Logit Models: {R} Package {mnlogit}",
+  author       = c(person(given = "Asad",
+                          family = "Hasan",
+                          email = "asadhasan32@gmail.com"),
+                   person(given = "Zhiyu",
+                          family = "Wang"),
+                   person(given = c("Alireza", "S."),
+                          family = "Mahani",
+                          email = "alireza.s.mahani@gmail.com")),
+  journal      = "Journal of Statistical Software",
+  year         = "2016",
+  volume       = "75",
+  number       = "3",
+  pages        = "1--24",
+  doi          = "10.18637/jss.v075.i03",
+
+  header       = "To cite mnlogit in publications use:",
+  textVersion  =
+  paste("Asad Hasan, Zhiyu Wang, Alireza S. Mahani (2016).",
+        "Fast Estimation of Multinomial Logit Models: R Package mnlogit.",
+        "Journal of Statistical Software, 75(3), 1-24.",
+        "doi:10.18637/jss.v075.i03")
+)
+

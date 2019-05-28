@@ -1,5 +1,5 @@
-### R code from vignette source '/data/home/ahasan/projects/mnlogit/CRAN_latest/mnlogit/inst/doc/mnlogit.Rnw'
-### Encoding: UTF-8
+### R code from vignette source 'mnlogit.Rnw'
+### Encoding: ISO8859-1
 
 ###################################################
 ### code chunk number 1: mnlogit.Rnw:106-107
@@ -100,20 +100,21 @@ print(fit, what = "modsize")
 
 
 ###################################################
-### code chunk number 15: mnlogit.Rnw:877-878
+### code chunk number 15: mnlogit.Rnw:881-882
 ###################################################
 library("mlogit")
 
 
 ###################################################
-### code chunk number 16: mnlogit.Rnw:883-885
+### code chunk number 16: mnlogit.Rnw:887-890
 ###################################################
 source("simChoiceModel.R")
-data <- makeModel('X', K=10)
+numCovars = 50
+data <- makeModel('X', K=10, numCovars=numCovars)
 
 
 ###################################################
-### code chunk number 17: mnlogit.Rnw:888-893
+### code chunk number 17: mnlogit.Rnw:893-898
 ###################################################
 K = length(unique(data$choices))
 N = nrow(data)/K
@@ -123,20 +124,20 @@ cat(paste0("Number of choices in simulated data = K = ", K, ".\nNumber of observ
 
 
 ###################################################
-### code chunk number 18: mnlogit.Rnw:897-899
+### code chunk number 18: mnlogit.Rnw:902-904
 ###################################################
-vars <- paste("X", 1:50, sep="", collapse=" + ")
+vars <- paste("X", 1:numCovars, sep="", collapse=" + ")
 fm <- formula(paste("response ~ 1|", vars, " - 1 | 1"))
 
 
 ###################################################
-### code chunk number 19: mnlogit.Rnw:902-903
+### code chunk number 19: mnlogit.Rnw:907-908
 ###################################################
 system.time(fit.mnlogit <- mnlogit(fm, data, "choices"))  
 
 
 ###################################################
-### code chunk number 20: mnlogit.Rnw:906-910
+### code chunk number 20: mnlogit.Rnw:911-915
 ###################################################
 mdat <- mlogit.data(data[order(data$indivID), ], "response", shape="long", 
 alt.var="choices")
@@ -145,7 +146,7 @@ system.time(fit.mlogit <- mlogit(fm, mdat, method='bfgs'))
 
 
 ###################################################
-### code chunk number 21: mnlogit.Rnw:920-924
+### code chunk number 21: mnlogit.Rnw:925-929
 ###################################################
 library("nnet")
 ndat <- data[which(data$response > 0), ]
@@ -154,7 +155,7 @@ system.time(fit.nnet <- multinom(fm.nnet, ndat, reltol=1e-12))
 
 
 ###################################################
-### code chunk number 22: mnlogit.Rnw:928-931
+### code chunk number 22: mnlogit.Rnw:933-936
 ###################################################
 library("VGAM")
 system.time(fit.vglm <- vglm(fm.nnet, data=ndat, multinomial(refLevel=1),

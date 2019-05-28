@@ -50,7 +50,6 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
         warning(paste("Column", choiceVar, "in data will NOT be treated as",
                       "factor, but as character string!"))
     }
-
     # Get choiceVar if NULL from data (which MUST now be a mlogit.data object)
     if (is.null(choiceVar) && !any(class(data) == "mlogit.data"))
         stop("Arg data MUST be a mlogit.data object when arg choiceVar = NULL")
@@ -58,7 +57,7 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
         choiceVar <- "_Alt_Indx_"
         data[[choiceVar]] <- attr(data, "index")$alt # attach to 'data'
     }
-
+    
     # Extract various types of variables from formula
     formula <- parseFormula(formula) 
     response <- attr(formula, "response")     # response variable
@@ -90,7 +89,7 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     if (nrow(data) %% K)
         stop("Mismatch between number of rows in data and number of choices.")
     N <- nrow(data)/K       # number of individuals
-
+        
     # Check if weights is OK 
     if (!is.null(weights) && length(weights) != N)
       stop("Length of 'weights' arg must match number of observations in data.")
@@ -100,13 +99,14 @@ mnlogit <- function(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
     if (!is.null(weights)) weights <- weights * N / sum(weights)    
 
     # Work with only the columns appearing in formula
-    data <- data[c(varNames, choiceVar)]
+    data <- data[, c(varNames, choiceVar)]
 
     # Handle NA; Find out row numbers with atleast one NA
     na.rows <- c()
     for (col in 1:ncol(data))
         na.rows <- union(na.rows, which(is.na(data[[col]])))
     Ndropped <- 0
+    
     if (length(na.rows) > 0) {
         if (!na.rm)
             stop("NA present in input data.frame with na.rm = FALSE.")

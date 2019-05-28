@@ -117,7 +117,6 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
 }
 
 \author{Asad Hasan, Wang Zhiyu, Alireza S. Mahani}
-\keyword{mnlogit, logistic, classification, multinomial, mlogit, parallel}
 
 \examples{
 
@@ -141,3 +140,7 @@ mnlogit(formula, data, choiceVar=NULL, maxiter = 50, ftol = 1e-6,
    fm <- formula(mode ~ 1 | 1 | catch) # Only type-3, including intercept 
   }
 }
+
+\keyword{mnlogit}
+\keyword{mlogit}
+\keyword{classification}

@@ -151,3 +151,21 @@ void computeHessian(int* Np, int* Kp, int* pp, int* fp, int* dp, int* hasWt,
 SEXP getListElement(SEXP list, const char *tag);
 
 } // extern "C" 
+
+
+#include "R_ext/Rdynload.h"
+
+static const R_CMethodDef CEntries[] = {
+  {"computeHessianDotCall", (DL_FUNC) &computeHessianDotCall, 13},
+  {NULL, NULL, 0}
+};
+
+#include <Rversion.h>
+void R_init_nnet(DllInfo *dll)
+{
+  R_registerRoutines(dll, CEntries, NULL, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
+#if defined(R_VERSION) && R_VERSION >= R_Version(2, 16, 0)
+  R_forceSymbols(dll, TRUE);
+#endif
+}

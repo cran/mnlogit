@@ -380,7 +380,7 @@ SEXP computeHessianDotCall(SEXP Np, SEXP Kp, SEXP pp, SEXP fp, SEXP dp,
     int p  = INTEGER(pp)[0];
     int f  = INTEGER(fp)[0];
     int d  = INTEGER(dp)[0];
-    int np = p * (K - 1) + f * K + d; 
+    //int np = p * (K - 1) + f * K + d; 
 
     double *X = NULL, *Y = NULL, *Z = NULL, *wt = NULL;
     if (!isNull(Xm)) X = REAL(Xm);

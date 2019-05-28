@@ -4,7 +4,7 @@
 import("Formula")
 import("stats")
 importFrom("mlogit", "mlogit.data")
-importFrom("mlogit", "index")
+#importFrom("mlogit", "index")
 importFrom("lmtest", "lrtest")
 importFrom("lmtest", "lrtest.default")
 importFrom("lmtest", "waldtest")

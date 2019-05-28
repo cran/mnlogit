@@ -886,7 +886,8 @@ The data we use for the timing tests shown here is individual specific (problem 
 We generate data for a model with $K$ choices as shown below.
 <<>>=
 source("simChoiceModel.R")
-data <- makeModel('X', K=10)
+numCovars = 50
+data <- makeModel('X', K=10, numCovars=numCovars)
 @
 Default arguments of \code{makeModel} set the number of variables and the number of observations, which are:
 <<echo=FALSE>>=
@@ -899,7 +900,7 @@ cat(paste0("Number of choices in simulated data = K = ", K, ".\nNumber of observ
 
 The next steps setup a \code{formula} object which specifies that  individual specific data must be modeled with alternative specific coefficients and the intercept is excluded from the model.
 <<>>=
-vars <- paste("X", 1:50, sep="", collapse=" + ")
+vars <- paste("X", 1:numCovars, sep="", collapse=" + ")
 fm <- formula(paste("response ~ 1|", vars, " - 1 | 1"))
 @
 Using this formula and our previously generated \code{data.frame} we run \pkg{mnlogit} to measure its running time (in single threaded mode).

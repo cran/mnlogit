@@ -1,3 +1,9 @@
+Changes since version 1.2.5
+	
+	* Commented out unused variable in src/hessian.cc to quell compiler warning.
+
+	* Removed import from mlogit of index into NAMESPACE
+
 Changes since version 1.2.4
 	
 	* Fixed a bug in predict.R, thanks to John Eric Humphries of U Chicago for the catch.
